@@ -234,3 +234,210 @@ function renderDashboard(){
     (sum,c)=> sum + (Number(c.price)||0), 0
   );
 }
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>SPA CRM</title>
+<style>
+body{margin:0;font-family:Arial;background:#f4f6f8}
+header{background:#2f3b52;color:#fff;padding:16px;font-size:20px}
+.container{padding:16px}
+.dashboard{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.box{background:#fff;padding:14px;border-radius:6px}
+.box h3{margin:0;font-size:13px;color:#555}
+.box p{margin:6px 0 0;font-size:22px;font-weight:bold}
+
+.layout{display:grid;grid-template-columns:320px 1fr;gap:16px}
+.left,.right{background:#fff;border-radius:6px;padding:12px}
+
+input,select,textarea,button{
+  width:100%;
+  padding:8px;
+  margin:6px 0;
+  font-size:14px;
+}
+button{
+  background:#2f3b52;
+  color:#fff;
+  border:none;
+  border-radius:4px;
+  cursor:pointer;
+}
+
+.customer{
+  padding:10px;
+  border-bottom:1px solid #eee;
+  cursor:pointer;
+}
+.customer:hover{background:#f0f2f5}
+.active{background:#e6ebf2}
+
+label{font-size:13px;color:#555}
+.delete{background:#b02a2a;margin-top:12px}
+</style>
+</head>
+
+<body>
+
+<header>SPA CUSTOMER MANAGEMENT</header>
+
+<div class="container">
+
+<!-- DASHBOARD -->
+<div class="dashboard">
+  <div class="box"><h3>Tổng khách</h3><p id="totalCus">0</p></div>
+  <div class="box"><h3>Đang làm</h3><p id="doingCus">0</p></div>
+  <div class="box"><h3>Đã xong</h3><p id="doneCus">0</p></div>
+  <div class="box"><h3>Tổng doanh thu</h3><p id="totalMoney">0</p></div>
+</div>
+
+<div class="layout">
+
+<!-- LEFT -->
+<div class="left">
+<b>Thêm khách mới</b>
+<input id="name" placeholder="Tên khách">
+<input id="birthday" type="date">
+<select id="status">
+  <option>Đang làm</option>
+  <option>Đã xong</option>
+</select>
+<input id="staffCare" placeholder="Nhân viên chăm sóc">
+<input id="staffSale" placeholder="Nhân viên tư vấn">
+<input id="price" type="number" placeholder="Giá dịch vụ">
+<textarea id="route" placeholder="Lộ trình chăm sóc"></textarea>
+<button onclick="addCustomer()">Lưu khách</button>
+
+<hr>
+<b>Danh sách khách</b>
+<div id="list"></div>
+</div>
+
+<!-- RIGHT -->
+<div class="right" id="detail">
+<p>Chọn khách để xem chi tiết</p>
+</div>
+
+</div>
+</div>
+
+<script>
+/* ===== DATA ===== */
+let customers = [];
+let currentId = null;
+
+/* ===== SAVE ===== */
+function save(){
+  localStorage.setItem("customers", JSON.stringify(customers));
+  renderDashboard();
+}
+
+/* ===== LOAD ===== */
+function load(){
+  customers = JSON.parse(localStorage.getItem("customers") || "[]");
+  renderDashboard();
+  renderList();
+}
+
+/* ===== DASHBOARD ===== */
+function renderDashboard(){
+  totalCus.innerText = customers.length;
+  doingCus.innerText = customers.filter(c=>c.status==="Đang làm").length;
+  doneCus.innerText = customers.filter(c=>c.status==="Đã xong").length;
+  totalMoney.innerText = customers.reduce((s,c)=>s + (c.price||0),0);
+}
+
+/* ===== ADD ===== */
+function addCustomer(){
+  if(!name.value.trim()) return alert("Chưa nhập tên khách");
+
+  const c = {
+    id: Date.now(),
+    name: name.value,
+    birthday: birthday.value,
+    status: status.value,
+    staffCare: staffCare.value,
+    staffSale: staffSale.value,
+    price: Number(price.value)||0,
+    route: route.value
+  };
+
+  customers.push(c);
+  currentId = c.id;
+
+  save();
+  renderList();
+  openDetail(c.id);
+
+  name.value = birthday.value = staffCare.value =
+  staffSale.value = price.value = route.value = "";
+}
+
+/* ===== LIST ===== */
+function renderList(){
+  list.innerHTML="";
+  customers.forEach(c=>{
+    const d=document.createElement("div");
+    d.className="customer"+(c.id===currentId?" active":"");
+    d.innerHTML=`<b>${c.name}</b><br>${c.status}`;
+    d.onclick=()=>openDetail(c.id);
+    list.appendChild(d);
+  });
+}
+
+/* ===== DETAIL ===== */
+function openDetail(id){
+  currentId=id;
+  renderList();
+  const c=customers.find(x=>x.id===id);
+  detail.innerHTML=`
+    <h3>${c.name}</h3>
+
+    <label>Trạng thái</label>
+    <select onchange="update('status',this.value)">
+      <option ${c.status==="Đang làm"?"selected":""}>Đang làm</option>
+      <option ${c.status==="Đã xong"?"selected":""}>Đã xong</option>
+    </select>
+
+    <label>Nhân viên chăm sóc</label>
+    <input value="${c.staffCare}" onchange="update('staffCare',this.value)">
+
+    <label>Nhân viên tư vấn</label>
+    <input value="${c.staffSale}" onchange="update('staffSale',this.value)">
+
+    <label>Giá dịch vụ</label>
+    <input type="number" value="${c.price}" onchange="update('price',this.value)">
+
+    <label>Lộ trình</label>
+    <textarea onchange="update('route',this.value)">${c.route}</textarea>
+
+    <button class="delete" onclick="removeCustomer()">Xoá khách</button>
+  `;
+}
+
+/* ===== UPDATE ===== */
+function update(key,value){
+  const c=customers.find(c=>c.id===currentId);
+  c[key]=key==="price"?Number(value)||0:value;
+  save();
+  renderList();
+}
+
+/* ===== DELETE ===== */
+function removeCustomer(){
+  if(confirm("Xoá khách này?")){
+    customers=customers.filter(c=>c.id!==currentId);
+    currentId=null;
+    save();
+    renderList();
+    detail.innerHTML="<p>Chọn khách để xem chi tiết</p>";
+  }
+}
+
+/* INIT */
+load();
+</script>
+
+</body>
+</html>
