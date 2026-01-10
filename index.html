@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Spa CRM Demo</title>
+<style>
+body{font-family:Arial;background:#f5f6f8;padding:20px}
+.container{max-width:900px;margin:auto}
+h1{text-align:center;color:#e91e63}
+.card{background:#fff;padding:16px;border-radius:10px;margin-bottom:20px}
+input,button{width:100%;padding:10px;margin-top:8px}
+button{background:#e91e63;color:#fff;border:none;border-radius:6px;cursor:pointer}
+table{width:100%;border-collapse:collapse;margin-top:10px}
+th,td{border:1px solid #ddd;padding:8px;text-align:center}
+th{background:#fde4ec}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>🌸 Spa Customer Management – Demo</h1>
+
+<div class="card">
+<h3>Thêm khách hàng</h3>
+<input id="name" placeholder="Tên khách hàng">
+<input id="phone" placeholder="Số điện thoại">
+<input id="service" placeholder="Liệu trình">
+<input id="date" type="date">
+<button onclick="addCustomer()">Thêm khách</button>
+</div>
+
+<div class="card">
+<h3>Danh sách khách hàng</h3>
+<table>
+<thead>
+<tr>
+<th>Tên</th><th>SĐT</th><th>Liệu trình</th><th>Ngày chăm sóc tiếp</th><th>Xóa</th>
+</tr>
+</thead>
+<tbody id="list"></tbody>
+</table>
+</div>
+</div>
+
+<script>
+let customers = JSON.parse(localStorage.getItem("spaCRM")) || [];
+
+function render(){
+  const list = document.getElementById("list");
+  list.innerHTML="";
+  customers.forEach((c,i)=>{
+    list.innerHTML+=`
+    <tr>
+      <td>${c.name}</td>
+      <td>${c.phone}</td>
+      <td>${c.service}</td>
+      <td>${c.date}</td>
+      <td><button onclick="removeCustomer(${i})">❌</button></td>
+    </tr>`;
+  });
+  localStorage.setItem("spaCRM",JSON.stringify(customers));
+}
+
+function addCustomer(){
+  if(!name.value||!phone.value){alert("Nhập tên và SĐT");return;}
+  customers.push({name:name.value,phone:phone.value,service:service.value,date:date.value});
+  name.value=phone.value=service.value=date.value="";
+  render();
+}
+function removeCustomer(i){customers.splice(i,1);render();}
+render();
+</script>
+</body>
+</html>
