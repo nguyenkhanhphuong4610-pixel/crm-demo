@@ -2,10 +2,10 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<title>Spa CRM – Showcase</title>
+<title>Spa CRM – Full Demo</title>
 <style>
 body{font-family:Arial;background:#f4f6f8;padding:20px}
-.container{max-width:1100px;margin:auto}
+.container{max-width:1200px;margin:auto}
 h1{text-align:center;color:#e91e63}
 .card{background:#fff;padding:15px;border-radius:10px;margin-bottom:20px}
 input,select,textarea,button{width:100%;padding:8px;margin-top:6px}
@@ -17,12 +17,15 @@ textarea{height:70px}
 .badge{padding:4px 8px;border-radius:5px;color:#fff;font-size:12px}
 .doing{background:#ff9800}
 .done{background:#4caf50}
+.alert{background:#fff3cd;padding:10px;border-radius:6px;margin-bottom:15px}
 </style>
 </head>
 
 <body>
 <div class="container">
-<h1>🌸 Spa Customer Management – Demo</h1>
+<h1>🌸 Spa Customer Management – Showcase</h1>
+
+<div id="birthdayAlert"></div>
 
 <div class="card">
 <h3>Thêm / Sửa khách hàng</h3>
@@ -33,15 +36,22 @@ textarea{height:70px}
 <input type="number" id="price" placeholder="Giá dịch vụ (VNĐ)">
 <input id="consultant" placeholder="Nhân viên tư vấn">
 <input id="staff" placeholder="Nhân viên chăm sóc">
+<input type="date" id="nextDate">
 
 <select id="status">
 <option value="doing">Đang trong tiến trình</option>
 <option value="done">Đã hoàn thành</option>
 </select>
 
-<textarea id="roadmap" placeholder="Lộ trình chăm sóc (mỗi dòng là 1 buổi)"></textarea>
+<textarea id="roadmap" placeholder="Lộ trình (mỗi dòng = 1 buổi)"></textarea>
 
 <button onclick="saveCustomer()">Lưu khách hàng</button>
+</div>
+
+<div class="card">
+<h3>📊 Thống kê nhanh</h3>
+<p><b>Tổng khách:</b> <span id="totalCus">0</span></p>
+<p><b>Tổng doanh thu:</b> <span id="totalMoney">0</span> đ</p>
 </div>
 
 <div class="card">
@@ -54,6 +64,7 @@ textarea{height:70px}
 <th>Dịch vụ</th>
 <th>Giá</th>
 <th>Trạng thái</th>
+<th>Hẹn tiếp</th>
 <th>Chi tiết</th>
 <th>Sửa</th>
 </tr>
@@ -75,58 +86,47 @@ let editingId = null;
 function saveCustomer(){
   const data = {
     id: editingId || Date.now(),
-    name: name.value,
-    phone: phone.value,
-    birthday: birthday.value,
-    service: service.value,
-    price: price.value,
-    consultant: consultant.value,
-    staff: staff.value,
-    status: status.value,
-    roadmap: roadmap.value.split("\n")
+    name:name.value, phone:phone.value, birthday:birthday.value,
+    service:service.value, price:+price.value,
+    consultant:consultant.value, staff:staff.value,
+    status:status.value, nextDate:nextDate.value,
+    roadmap:roadmap.value.split("\n")
   };
-
-  if(!data.name || !data.phone){
-    alert("Nhập tối thiểu tên và SĐT");
-    return;
-  }
-
-  if(editingId){
-    customers = customers.map(c=>c.id===editingId?data:c);
-    editingId = null;
-  } else {
-    customers.push(data);
-  }
-
-  localStorage.setItem("spaCRM", JSON.stringify(customers));
-  clearForm();
-  render();
+  if(!data.name||!data.phone){alert("Nhập tên và SĐT");return;}
+  editingId ? customers=customers.map(c=>c.id===editingId?data:c) : customers.push(data);
+  editingId=null;
+  localStorage.setItem("spaCRM",JSON.stringify(customers));
+  clearForm(); render();
 }
 
 function render(){
   list.innerHTML="";
+  let money=0;
   customers.forEach(c=>{
+    money+=c.price||0;
     list.innerHTML+=`
     <tr>
       <td>${c.name}</td>
       <td>${c.phone}</td>
       <td>${c.service}</td>
-      <td>${Number(c.price).toLocaleString()}đ</td>
-      <td><span class="badge ${c.status}">${c.status==="doing"?"Đang làm":"Hoàn thành"}</span></td>
+      <td>${(c.price||0).toLocaleString()}đ</td>
+      <td><span class="badge ${c.status}">${c.status=="doing"?"Đang làm":"Xong"}</span></td>
+      <td>${c.nextDate||"-"}</td>
       <td><button onclick="viewDetail(${c.id})">Xem</button></td>
       <td><button onclick="editCustomer(${c.id})">Sửa</button></td>
     </tr>`;
   });
+  totalCus.innerText=customers.length;
+  totalMoney.innerText=money.toLocaleString();
+  birthdayCheck();
 }
 
 function viewDetail(id){
-  const c = customers.find(x=>x.id===id);
+  const c=customers.find(x=>x.id===id);
   detail.innerHTML=`
   <p><b>Tên:</b> ${c.name}</p>
   <p><b>SĐT:</b> ${c.phone}</p>
-  <p><b>Sinh nhật:</b> ${c.birthday||"—"}</p>
-  <p><b>Dịch vụ:</b> ${c.service}</p>
-  <p><b>Giá:</b> ${Number(c.price).toLocaleString()}đ</p>
+  <p><b>Sinh nhật:</b> ${c.birthday||"-"}</p>
   <p><b>NV tư vấn:</b> ${c.consultant}</p>
   <p><b>NV chăm sóc:</b> ${c.staff}</p>
   <p><b>Lộ trình:</b></p>
@@ -135,23 +135,29 @@ function viewDetail(id){
 }
 
 function editCustomer(id){
-  const c = customers.find(x=>x.id===id);
+  const c=customers.find(x=>x.id===id);
   editingId=id;
-  name.value=c.name;
-  phone.value=c.phone;
-  birthday.value=c.birthday;
-  service.value=c.service;
-  price.value=c.price;
-  consultant.value=c.consultant;
-  staff.value=c.staff;
-  status.value=c.status;
-  roadmap.value=c.roadmap.join("\n");
+  Object.assign(window,{
+    name:{value:c.name}, phone:{value:c.phone}, birthday:{value:c.birthday},
+    service:{value:c.service}, price:{value:c.price},
+    consultant:{value:c.consultant}, staff:{value:c.staff},
+    status:{value:c.status}, nextDate:{value:c.nextDate},
+    roadmap:{value:c.roadmap.join("\n")}
+  });
   window.scrollTo(0,0);
 }
 
 function clearForm(){
-  name.value=phone.value=birthday.value=service.value=price.value=consultant.value=staff.value=roadmap.value="";
+  name.value=phone.value=birthday.value=service.value=price.value=
+  consultant.value=staff.value=roadmap.value=nextDate.value="";
   status.value="doing";
+}
+
+function birthdayCheck(){
+  const today=new Date().toISOString().slice(5,10);
+  const listBD=customers.filter(c=>c.birthday?.slice(5,10)===today);
+  birthdayAlert.innerHTML=listBD.length?
+    `<div class="alert">🎂 Hôm nay sinh nhật: ${listBD.map(c=>c.name).join(", ")}</div>`:"";
 }
 
 render();
