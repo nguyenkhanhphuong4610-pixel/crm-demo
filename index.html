@@ -195,3 +195,42 @@ renderList();
 
 </body>
 </html>
+function addCustomer(){
+  if(!name.value.trim()) return alert("Chưa nhập tên khách");
+
+  const newCus = {
+    id: Date.now(),
+    name: name.value,
+    birthday: birthday.value,
+    status: status.value,
+    staffCare: staffCare.value,
+    staffSale: staffSale.value,
+    price: Number(price.value) || 0,
+    route: route.value
+  };
+
+  customers.push(newCus);
+  currentId = newCus.id;
+
+  save();
+  renderList();
+  openDetail(newCus.id);
+
+  name.value = birthday.value = staffCare.value =
+  staffSale.value = price.value = route.value = "";
+}
+function update(key,value){
+  const c = customers.find(c=>c.id===currentId);
+  c[key] = key==="price" ? Number(value)||0 : value;
+  save();
+  renderList();
+}
+function renderDashboard(){
+  totalCus.innerText = customers.length;
+  doingCus.innerText = customers.filter(c=>c.status==="Đang làm").length;
+  doneCus.innerText = customers.filter(c=>c.status==="Đã xong").length;
+
+  totalMoney.innerText = customers.reduce(
+    (sum,c)=> sum + (Number(c.price)||0), 0
+  );
+}
