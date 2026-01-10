@@ -2,182 +2,127 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<title>Spa CRM – Demo hoàn chỉnh</title>
+<title>Spa CRM – Full Cloud Demo</title>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <style>
-body{font-family:Arial;background:#f2f4f7;margin:0;padding:20px}
-.container{max-width:1200px;margin:auto}
-h1,h2{color:#e91e63}
+body{font-family:Arial;background:#f2f4f7;padding:20px}
 .card{background:#fff;padding:16px;border-radius:10px;margin-bottom:16px}
-input,select,textarea,button{
-  width:100%;padding:8px;margin-top:6px;border-radius:6px;border:1px solid #ccc
-}
-button{background:#e91e63;color:#fff;border:none;cursor:pointer}
+input,textarea,button{width:100%;padding:8px;margin-top:6px}
+button{background:#e91e63;color:#fff;border:none;border-radius:6px}
+.hidden{display:none}
 table{width:100%;border-collapse:collapse}
 th,td{border:1px solid #ddd;padding:8px;text-align:center}
-th{background:#fde4ec}
-.hidden{display:none}
-a{color:#e91e63;cursor:pointer;text-decoration:none}
-.badge{padding:4px 8px;border-radius:6px;color:#fff;font-size:12px}
-.doing{background:#ff9800}
-.done{background:#4caf50}
-.flex{display:flex;gap:10px;flex-wrap:wrap}
-img{max-width:45%;border-radius:6px;border:1px solid #ddd}
 </style>
 </head>
 
 <body>
-<div class="container">
 
-<!-- ===== PAGE: LIST ===== -->
-<div id="pageList">
-<h1>🌸 Quản lý khách hàng Spa</h1>
+<div id="login" class="card">
+<h2>Đăng nhập</h2>
+<input id="user" placeholder="admin">
+<input id="pass" type="password" placeholder="123456">
+<button onclick="login()">Login</button>
+</div>
+
+<div id="app" class="hidden">
 
 <div class="card">
-<input id="search" placeholder="🔍 Tìm theo tên hoặc SĐT" oninput="renderList()">
+<button onclick="backup()">⬇ Backup dữ liệu</button>
+<input type="file" onchange="restore(this)">
 </div>
 
 <div class="card">
-<h3>➕ Thêm khách hàng</h3>
-<input id="customerName" placeholder="Tên khách">
-<input id="phone" placeholder="Số điện thoại">
-<input id="birthday" type="date">
-<input id="service" placeholder="Dịch vụ">
-<input id="price" type="number" placeholder="Giá dịch vụ">
-<input id="consultant" placeholder="NV tư vấn">
-<input id="staff" placeholder="NV chăm sóc">
-<input id="nextDate" type="date">
-<select id="status">
-  <option value="doing">Đang làm</option>
-  <option value="done">Đã xong</option>
-</select>
-<textarea id="roadmap" placeholder="Lộ trình (mỗi dòng là 1 bước)"></textarea>
-<input id="beforeImg" placeholder="Link ảnh Before">
-<input id="afterImg" placeholder="Link ảnh After">
-
-<button onclick="addCustomer()">Lưu khách hàng</button>
+<h3>Thêm khách</h3>
+<input id="name" placeholder="Tên khách">
+<input id="phone" placeholder="SĐT">
+<textarea id="roadmap" placeholder="Lộ trình"></textarea>
+<input id="beforeImg" placeholder="Link before">
+<input id="afterImg" placeholder="Link after">
+<button onclick="add()">Lưu</button>
 </div>
 
 <div class="card">
 <table>
-<thead>
-<tr>
-<th>Tên</th><th>SĐT</th><th>Dịch vụ</th><th>Trạng thái</th><th>Hồ sơ</th>
-</tr>
-</thead>
+<thead><tr><th>Tên</th><th>SĐT</th></tr></thead>
 <tbody id="list"></tbody>
 </table>
-</div>
-</div>
-
-<!-- ===== PAGE: DETAIL ===== -->
-<div id="pageDetail" class="hidden">
-<a onclick="goHome()">← Quay lại</a>
-<div class="card" id="detail"></div>
 </div>
 
 </div>
 
 <script>
-let customers = JSON.parse(localStorage.getItem("spaCRM")) || [];
-
-function save(){
-  localStorage.setItem("spaCRM",JSON.stringify(customers));
+// ===== AUTH =====
+function login(){
+  if(user.value==="admin" && pass.value==="123456"){
+    localStorage.isLogin=true;
+    login.classList.add("hidden");
+    app.classList.remove("hidden");
+    load();
+  }
 }
 
-function addCustomer(){
-  if(!customerName.value||!phone.value){
-    alert("Thiếu tên hoặc SĐT"); return;
-  }
-  customers.push({
-    id:Date.now(),
-    name:customerName.value,
+// ===== FIREBASE =====
+const firebaseConfig = {
+  apiKey: "XXX",
+  authDomain: "XXX",
+  projectId: "XXX",
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// ===== CRUD =====
+async function add(){
+  await db.collection("customers").add({
+    name:name.value,
     phone:phone.value,
-    birthday:birthday.value,
-    service:service.value,
-    price:price.value,
-    consultant:consultant.value,
-    staff:staff.value,
-    nextDate:nextDate.value,
-    status:status.value,
     roadmap:roadmap.value.split("\n"),
     beforeImg:beforeImg.value,
     afterImg:afterImg.value
   });
-  save();
-  clearForm();
-  renderList();
+  load();
 }
 
-function clearForm(){
-  document.querySelectorAll("input,textarea").forEach(i=>i.value="");
-}
-
-function renderList(){
-  const key = search.value.toLowerCase();
+async function load(){
   list.innerHTML="";
-  customers
-    .filter(c=>c.name.toLowerCase().includes(key)||c.phone.includes(key))
-    .forEach(c=>{
-      list.innerHTML+=`
+  const snap = await db.collection("customers").get();
+  snap.forEach(doc=>{
+    const c=doc.data();
+    list.innerHTML+=`
       <tr>
         <td>${c.name}</td>
         <td>${c.phone}</td>
-        <td>${c.service}</td>
-        <td><span class="badge ${c.status}">
-          ${c.status==="doing"?"Đang làm":"Hoàn thành"}
-        </span></td>
-        <td><a onclick="openCustomer(${c.id})">Mở</a></td>
       </tr>`;
-    });
+  });
 }
 
-function openCustomer(id){
-  location.hash="customer-"+id;
+// ===== BACKUP =====
+async function backup(){
+  const snap = await db.collection("customers").get();
+  const data=[];
+  snap.forEach(d=>data.push(d.data()));
+  const blob=new Blob([JSON.stringify(data)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="spa-backup.json";
+  a.click();
 }
 
-function goHome(){
-  location.hash="";
+// ===== RESTORE =====
+function restore(input){
+  const file=input.files[0];
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    const data=JSON.parse(e.target.result);
+    for(const c of data){
+      await db.collection("customers").add(c);
+    }
+    load();
+  };
+  reader.readAsText(file);
 }
-
-function renderDetail(id){
-  const c = customers.find(x=>x.id==id);
-  if(!c) return;
-  detail.innerHTML=`
-    <h2>${c.name}</h2>
-    <p><b>SĐT:</b> ${c.phone}</p>
-    <p><b>Sinh nhật:</b> ${c.birthday||"-"}</p>
-    <p><b>Dịch vụ:</b> ${c.service}</p>
-    <p><b>Giá:</b> ${c.price}đ</p>
-    <p><b>NV tư vấn:</b> ${c.consultant}</p>
-    <p><b>NV chăm sóc:</b> ${c.staff}</p>
-    <p><b>Ngày hẹn tiếp:</b> ${c.nextDate}</p>
-
-    <h3>Lộ trình</h3>
-    <ul>${c.roadmap.map(r=>`<li>${r}</li>`).join("")}</ul>
-
-    <h3>Before / After</h3>
-    <div class="flex">
-      ${c.beforeImg?`<img src="${c.beforeImg}">`:""}
-      ${c.afterImg?`<img src="${c.afterImg}">`:""}
-    </div>
-  `;
-}
-
-function router(){
-  if(location.hash.startsWith("#customer-")){
-    pageList.classList.add("hidden");
-    pageDetail.classList.remove("hidden");
-    renderDetail(location.hash.replace("#customer-",""));
-  } else {
-    pageDetail.classList.add("hidden");
-    pageList.classList.remove("hidden");
-    renderList();
-  }
-}
-
-window.addEventListener("hashchange",router);
-router();
 </script>
 
 </body>
