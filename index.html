@@ -2,71 +2,123 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<title>Spa CRM Demo</title>
+<title>Spa CRM – Demo Showcase</title>
 <style>
-body{font-family:Arial;background:#f5f6f8;padding:20px}
-.container{max-width:900px;margin:auto}
+body{font-family:Arial;background:#f4f6f8;padding:20px}
+.container{max-width:1000px;margin:auto}
 h1{text-align:center;color:#e91e63}
-.card{background:#fff;padding:16px;border-radius:10px;margin-bottom:20px}
-input,button{width:100%;padding:10px;margin-top:8px}
+.card{background:#fff;padding:15px;border-radius:10px;margin-bottom:20px}
+input,button{padding:10px;width:100%;margin-top:8px}
 button{background:#e91e63;color:#fff;border:none;border-radius:6px;cursor:pointer}
 table{width:100%;border-collapse:collapse;margin-top:10px}
 th,td{border:1px solid #ddd;padding:8px;text-align:center}
 th{background:#fde4ec}
+.detail{background:#fce4ec;padding:10px;border-radius:6px;margin-top:10px}
 </style>
 </head>
+
 <body>
 <div class="container">
 <h1>🌸 Spa Customer Management – Demo</h1>
 
+<!-- FORM -->
 <div class="card">
 <h3>Thêm khách hàng</h3>
 <input id="name" placeholder="Tên khách hàng">
 <input id="phone" placeholder="Số điện thoại">
-<input id="service" placeholder="Liệu trình">
-<input id="date" type="date">
-<button onclick="addCustomer()">Thêm khách</button>
+<input id="service" placeholder="Dịch vụ">
+<button onclick="addCustomer()">Lưu khách</button>
 </div>
 
+<!-- LIST -->
 <div class="card">
 <h3>Danh sách khách hàng</h3>
 <table>
 <thead>
 <tr>
-<th>Tên</th><th>SĐT</th><th>Liệu trình</th><th>Ngày chăm sóc tiếp</th><th>Xóa</th>
+<th>Tên</th>
+<th>SĐT</th>
+<th>Dịch vụ</th>
+<th>Lộ trình</th>
+<th>Chi tiết</th>
 </tr>
 </thead>
 <tbody id="list"></tbody>
 </table>
+</div>
+
+<!-- DETAIL -->
+<div class="card" id="detailBox" style="display:none">
+<h3>Chi tiết khách hàng</h3>
+<div id="detail"></div>
 </div>
 </div>
 
 <script>
 let customers = JSON.parse(localStorage.getItem("spaCRM")) || [];
 
-function render(){
-  const list = document.getElementById("list");
-  list.innerHTML="";
-  customers.forEach((c,i)=>{
-    list.innerHTML+=`
-    <tr>
-      <td>${c.name}</td>
-      <td>${c.phone}</td>
-      <td>${c.service}</td>
-      <td>${c.date}</td>
-      <td><button onclick="removeCustomer(${i})">❌</button></td>
-    </tr>`;
-  });
-  localStorage.setItem("spaCRM",JSON.stringify(customers));
+function autoRoadmap(service){
+  return [
+    "Buổi 1: Tư vấn & soi da",
+    "Buổi 2: Chăm sóc chuyên sâu",
+    "Buổi 3: Phục hồi & duy trì"
+  ];
 }
 
 function addCustomer(){
-  if(!name.value||!phone.value){alert("Nhập tên và SĐT");return;}
-  customers.push({name:name.value,phone:phone.value,service:service.value,date:date.value});
-  name.value=phone.value=service.value=date.value="";
+  const name = document.getElementById("name").value;
+  const phone = document.getElementById("phone").value;
+  const service = document.getElementById("service").value;
+
+  if(!name || !phone || !service){
+    alert("Vui lòng nhập đầy đủ thông tin");
+    return;
+  }
+
+  customers.push({
+    id: Date.now(),
+    name,
+    phone,
+    service,
+    roadmap: autoRoadmap(service)
+  });
+
+  localStorage.setItem("spaCRM", JSON.stringify(customers));
+  document.getElementById("name").value="";
+  document.getElementById("phone").value="";
+  document.getElementById("service").value="";
   render();
 }
-function removeCustomer(i){customers.splice(i,1);render();}
+
+function render(){
+  const list = document.getElementById("list");
+  list.innerHTML="";
+  customers.forEach(c=>{
+    list.innerHTML+=`
+      <tr>
+        <td>${c.name}</td>
+        <td>${c.phone}</td>
+        <td>${c.service}</td>
+        <td>${c.roadmap.length} buổi</td>
+        <td><button onclick="viewDetail(${c.id})">Xem</button></td>
+      </tr>`;
+  });
+}
+
+function viewDetail(id){
+  const c = customers.find(x=>x.id===id);
+  let html = `
+    <div class="detail">
+      <p><b>Tên:</b> ${c.name}</p>
+      <p><b>SĐT:</b> ${c.phone}</p>
+      <p><b>Dịch vụ:</b> ${c.service}</p>
+      <b>Lộ trình chăm sóc:</b>
+      <ul>${c.roadmap.map(r=>`<li>${r}</li>`).join("")}</ul>
+    </div>`;
+  document.getElementById("detail").innerHTML = html;
+  document.getElementById("detailBox").style.display="block";
+}
+
 render();
 </script>
 </body>
