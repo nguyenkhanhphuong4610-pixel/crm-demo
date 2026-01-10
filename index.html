@@ -4,51 +4,71 @@
 <meta charset="UTF-8">
 <title>SPA CRM</title>
 <style>
-body{margin:0;font-family:Arial;background:#f4f6f8}
-header{background:#2f3b52;color:#fff;padding:16px;font-size:20px}
+:root{
+  --pink-main:#d97c9f;
+  --pink-light:#fdecef;
+  --pink-bg:#fff5f7;
+  --pink-border:#f3c6d3;
+}
+body{margin:0;font-family:Arial;background:var(--pink-bg)}
+header{background:var(--pink-main);color:#fff;padding:16px;font-size:20px;font-weight:600}
 .container{padding:16px}
-.dashboard{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
-.box{background:#fff;padding:14px;border-radius:6px}
-.box h3{margin:0;font-size:13px;color:#555}
-.box p{margin:6px 0 0;font-size:22px;font-weight:bold}
 
-.layout{display:grid;grid-template-columns:320px 1fr;gap:16px}
-.left,.right{background:#fff;border-radius:6px;padding:12px}
+.dashboard{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:12px;
+  margin-bottom:16px
+}
+.box{
+  background:#fff;
+  padding:14px;
+  border-radius:8px;
+  border:1px solid var(--pink-border)
+}
+.box h3{margin:0;font-size:13px;color:#777}
+.box p{margin-top:6px;font-size:22px;font-weight:bold;color:var(--pink-main)}
+
+.layout{display:grid;grid-template-columns:340px 1fr;gap:16px}
+.left,.right{
+  background:#fff;
+  border-radius:8px;
+  padding:14px;
+  border:1px solid var(--pink-border)
+}
 
 input,select,textarea,button{
   width:100%;
-  padding:8px;
+  padding:9px;
   margin:6px 0;
   font-size:14px;
+  border-radius:6px;
+  border:1px solid var(--pink-border)
 }
 button{
-  background:#2f3b52;
+  background:var(--pink-main);
   color:#fff;
+  font-weight:600;
   border:none;
-  border-radius:4px;
-  cursor:pointer;
+  cursor:pointer
 }
-
 .customer{
   padding:10px;
-  border-bottom:1px solid #eee;
-  cursor:pointer;
+  border-bottom:1px solid var(--pink-border);
+  cursor:pointer
 }
-.customer:hover{background:#f0f2f5}
-.active{background:#e6ebf2}
-
-label{font-size:13px;color:#555}
-.delete{background:#b02a2a;margin-top:12px}
+.customer:hover{background:var(--pink-light)}
+.active{background:var(--pink-light);font-weight:600}
+.delete{background:#c44a6a;margin-top:12px}
+label{font-size:13px;color:#777}
 </style>
 </head>
 
 <body>
-
 <header>SPA CUSTOMER MANAGEMENT</header>
 
 <div class="container">
 
-<!-- DASHBOARD -->
 <div class="dashboard">
   <div class="box"><h3>Tổng khách</h3><p id="totalCus">0</p></div>
   <div class="box"><h3>Đang làm</h3><p id="doingCus">0</p></div>
@@ -58,10 +78,9 @@ label{font-size:13px;color:#555}
 
 <div class="layout">
 
-<!-- LEFT -->
 <div class="left">
 <b>Thêm khách mới</b>
-<input id="name" placeholder="Tên khách">
+<input id="customerName" placeholder="Tên khách">
 <input id="birthday" type="date">
 <select id="status">
   <option>Đang làm</option>
@@ -78,7 +97,6 @@ label{font-size:13px;color:#555}
 <div id="list"></div>
 </div>
 
-<!-- RIGHT -->
 <div class="right" id="detail">
 <p>Chọn khách để xem chi tiết</p>
 </div>
@@ -87,58 +105,53 @@ label{font-size:13px;color:#555}
 </div>
 
 <script>
-/* ===== DATA ===== */
-let customers = [];
-let currentId = null;
+let customers=[];
+let currentId=null;
 
-/* ===== SAVE ===== */
 function save(){
-  localStorage.setItem("customers", JSON.stringify(customers));
+  localStorage.setItem("customers",JSON.stringify(customers));
   renderDashboard();
 }
 
-/* ===== LOAD ===== */
 function load(){
-  customers = JSON.parse(localStorage.getItem("customers") || "[]");
+  customers=JSON.parse(localStorage.getItem("customers")||"[]");
   renderDashboard();
   renderList();
 }
 
-/* ===== DASHBOARD ===== */
 function renderDashboard(){
-  totalCus.innerText = customers.length;
-  doingCus.innerText = customers.filter(c=>c.status==="Đang làm").length;
-  doneCus.innerText = customers.filter(c=>c.status==="Đã xong").length;
-  totalMoney.innerText = customers.reduce((s,c)=>s + (c.price||0),0);
+  totalCus.innerText=customers.length;
+  doingCus.innerText=customers.filter(c=>c.status==="Đang làm").length;
+  doneCus.innerText=customers.filter(c=>c.status==="Đã xong").length;
+  totalMoney.innerText=customers.reduce((s,c)=>s+(c.price||0),0);
 }
 
-/* ===== ADD ===== */
 function addCustomer(){
-  if(!name.value.trim()) return alert("Chưa nhập tên khách");
+  const nameVal = customerName.value.trim();
+  if(!nameVal) return alert("Chưa nhập tên khách");
 
-  const c = {
-    id: Date.now(),
-    name: name.value,
-    birthday: birthday.value,
-    status: status.value,
-    staffCare: staffCare.value,
-    staffSale: staffSale.value,
-    price: Number(price.value)||0,
-    route: route.value
+  const c={
+    id:Date.now(),
+    name:nameVal,
+    birthday:birthday.value,
+    status:status.value,
+    staffCare:staffCare.value,
+    staffSale:staffSale.value,
+    price:Number(price.value)||0,
+    route:route.value
   };
 
   customers.push(c);
-  currentId = c.id;
+  currentId=c.id;
 
   save();
   renderList();
   openDetail(c.id);
 
-  name.value = birthday.value = staffCare.value =
-  staffSale.value = price.value = route.value = "";
+  customerName.value=birthday.value=staffCare.value=
+  staffSale.value=price.value=route.value="";
 }
 
-/* ===== LIST ===== */
 function renderList(){
   list.innerHTML="";
   customers.forEach(c=>{
@@ -150,7 +163,6 @@ function renderList(){
   });
 }
 
-/* ===== DETAIL ===== */
 function openDetail(id){
   currentId=id;
   renderList();
@@ -180,7 +192,6 @@ function openDetail(id){
   `;
 }
 
-/* ===== UPDATE ===== */
 function update(key,value){
   const c=customers.find(c=>c.id===currentId);
   c[key]=key==="price"?Number(value)||0:value;
@@ -188,7 +199,6 @@ function update(key,value){
   renderList();
 }
 
-/* ===== DELETE ===== */
 function removeCustomer(){
   if(confirm("Xoá khách này?")){
     customers=customers.filter(c=>c.id!==currentId);
@@ -199,7 +209,6 @@ function removeCustomer(){
   }
 }
 
-/* INIT */
 load();
 </script>
 
