@@ -2,7 +2,8 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<title>CRM</title>
+<title>CRM - Multi Services</title>
+
 <style>
 :root{
   --pink-main:#d97c9f;
@@ -25,9 +26,7 @@ header{
   font-weight:600;
 }
 
-.container{
-  padding:16px;
-}
+.container{padding:16px}
 
 .dashboard{
   display:grid;
@@ -84,16 +83,31 @@ button{
 
 .customer:hover{background:var(--pink-light)}
 .active{background:var(--pink-light);font-weight:600}
-.delete{background:#c44a6a;margin-top:12px}
+
+.service{
+  border:1px solid var(--pink-border);
+  padding:8px;
+  border-radius:6px;
+  margin:6px 0;
+}
+
+.delete{
+  background:#c44a6a;
+  margin-top:10px;
+}
+
 label{font-size:13px;color:#777}
+hr{border:none;border-top:1px solid var(--pink-border);margin:12px 0}
 </style>
 </head>
+
 <body>
 
 <header>CUSTOMER MANAGEMENT</header>
 
 <div class="container">
 
+  <!-- DASHBOARD -->
   <div class="dashboard">
     <div class="box"><h3>Tổng khách</h3><p id="totalCus">0</p></div>
     <div class="box"><h3>Đang làm</h3><p id="doingCus">0</p></div>
@@ -103,6 +117,7 @@ label{font-size:13px;color:#777}
 
   <div class="layout">
 
+    <!-- LEFT -->
     <div class="left">
       <b>Thêm khách mới</b>
       <input id="customerName" placeholder="Tên khách">
@@ -113,7 +128,6 @@ label{font-size:13px;color:#777}
       </select>
       <input id="staffCare" placeholder="Nhân viên chăm sóc">
       <input id="staffSale" placeholder="Nhân viên tư vấn">
-      <input id="price" type="number" placeholder="Giá dịch vụ">
       <textarea id="route" placeholder="Lộ trình chăm sóc"></textarea>
       <button onclick="addCustomer()">Lưu khách</button>
 
@@ -126,6 +140,7 @@ label{font-size:13px;color:#777}
       <div id="list"></div>
     </div>
 
+    <!-- RIGHT -->
     <div class="right" id="detail">
       <p>Chọn khách để xem chi tiết</p>
     </div>
@@ -137,82 +152,140 @@ label{font-size:13px;color:#777}
 let customers = [];
 let currentId = null;
 
-// Lưu dữ liệu vào localStorage
+/* ---------- STORAGE ---------- */
 function save(){
   localStorage.setItem("customers", JSON.stringify(customers));
   renderDashboard();
 }
 
-// Load dữ liệu từ localStorage
 function load(){
   customers = JSON.parse(localStorage.getItem("customers") || "[]");
   renderDashboard();
   renderList();
 }
 
-// Cập nhật dashboard
+/* ---------- DASHBOARD ---------- */
 function renderDashboard(){
   totalCus.innerText = customers.length;
-  doingCus.innerText = customers.filter(c => c.status === "Đang làm").length;
-  doneCus.innerText = customers.filter(c => c.status === "Đã xong").length;
-  totalMoney.innerText = customers.reduce((s, c) => s + (c.price || 0), 0);
+  doingCus.innerText = customers.filter(c => c.status==="Đang làm").length;
+  doneCus.innerText = customers.filter(c => c.status==="Đã xong").length;
+
+  const total = customers.reduce((sum,c)=>{
+    return sum + c.services.reduce((s,sv)=>s+sv.price,0);
+  },0);
+
+  totalMoney.innerText = total.toLocaleString();
 }
 
-// Thêm khách mới
+/* ---------- CUSTOMER ---------- */
 function addCustomer(){
-  const nameVal = customerName.value.trim();
-  if(!nameVal) return alert("Chưa nhập tên khách");
+  if(!customerName.value.trim()) return alert("Chưa nhập tên khách");
 
   const c = {
     id: Date.now(),
-    name: nameVal,
+    name: customerName.value,
     birthday: birthday.value,
     status: status.value,
     staffCare: staffCare.value,
     staffSale: staffSale.value,
-    price: Number(price.value) || 0,
-    route: route.value
+    route: route.value,
+    services: []
   };
 
   customers.push(c);
   currentId = c.id;
 
+  customerName.value = birthday.value =
+  staffCare.value = staffSale.value = route.value = "";
+
   save();
   renderList();
   openDetail(c.id);
-
-  // Reset form
-  customerName.value = birthday.value = staffCare.value =
-  staffSale.value = price.value = route.value = "";
 }
 
-// Vẽ danh sách khách, có lọc theo tìm kiếm
 function renderList(){
-  const keyword = document.getElementById("searchInput").value.trim().toLowerCase();
+  const key = searchInput.value.toLowerCase();
   list.innerHTML = "";
 
   customers
-    .filter(c => c.name.toLowerCase().includes(keyword))
-    .forEach(c => {
+    .filter(c => c.name.toLowerCase().includes(key))
+    .forEach(c=>{
       const d = document.createElement("div");
-      d.className = "customer" + (c.id === currentId ? " active" : "");
+      d.className = "customer" + (c.id===currentId?" active":"");
       d.innerHTML = `<b>${c.name}</b><br>${c.status}`;
-      d.onclick = () => openDetail(c.id);
+      d.onclick = ()=>openDetail(c.id);
       list.appendChild(d);
     });
 }
 
-// Mở chi tiết khách
+function update(key,value){
+  const c = customers.find(x=>x.id===currentId);
+  if(!c) return;
+  c[key] = value;
+  save();
+  renderList();
+}
+
+/* ---------- SERVICES ---------- */
+function addService(){
+  const c = customers.find(x=>x.id===currentId);
+  if(!c) return;
+
+  const name = document.getElementById("serviceName").value.trim();
+  const price = Number(document.getElementById("servicePrice").value);
+
+  if(!name || !price) return alert("Nhập đủ thông tin dịch vụ");
+
+  c.services.push({
+    id: Date.now(),
+    name,
+    price,
+    status:"Đang làm"
+  });
+
+  document.getElementById("serviceName").value="";
+  document.getElementById("servicePrice").value="";
+
+  save();
+  openDetail(currentId);
+}
+
+function updateService(id,key,value){
+  const c = customers.find(x=>x.id===currentId);
+  const s = c.services.find(s=>s.id===id);
+  s[key] = key==="price"?Number(value):value;
+  save();
+}
+
+function removeService(id){
+  const c = customers.find(x=>x.id===currentId);
+  c.services = c.services.filter(s=>s.id!==id);
+  save();
+  openDetail(currentId);
+}
+
+/* ---------- DETAIL ---------- */
 function openDetail(id){
   currentId = id;
   renderList();
-  const c = customers.find(x => x.id === id);
+  const c = customers.find(x=>x.id===id);
   if(!c) return;
+
+  const servicesHTML = c.services.map(s=>`
+    <div class="service">
+      <b>${s.name}</b> - ${s.price.toLocaleString()}đ
+      <select onchange="updateService(${s.id},'status',this.value)">
+        <option ${s.status==="Đang làm"?"selected":""}>Đang làm</option>
+        <option ${s.status==="Đã xong"?"selected":""}>Đã xong</option>
+      </select>
+      <button class="delete" onclick="removeService(${s.id})">Xoá dịch vụ</button>
+    </div>
+  `).join("");
 
   detail.innerHTML = `
     <h3>${c.name}</h3>
 
-    <label>Trạng thái</label>
+    <label>Trạng thái khách</label>
     <select onchange="update('status',this.value)">
       <option ${c.status==="Đang làm"?"selected":""}>Đang làm</option>
       <option ${c.status==="Đã xong"?"selected":""}>Đã xong</option>
@@ -224,37 +297,34 @@ function openDetail(id){
     <label>Nhân viên tư vấn</label>
     <input value="${c.staffSale}" onchange="update('staffSale',this.value)">
 
-    <label>Giá dịch vụ</label>
-    <input type="number" value="${c.price}" onchange="update('price',this.value)">
-
     <label>Lộ trình</label>
     <textarea onchange="update('route',this.value)">${c.route}</textarea>
+
+    <hr>
+    <b>Thêm dịch vụ</b>
+    <input id="serviceName" placeholder="Tên dịch vụ">
+    <input id="servicePrice" type="number" placeholder="Giá">
+    <button onclick="addService()">Thêm dịch vụ</button>
+
+    <hr>
+    <b>Danh sách dịch vụ</b>
+    ${servicesHTML || "<i>Chưa có dịch vụ</i>"}
 
     <button class="delete" onclick="removeCustomer()">Xoá khách</button>
   `;
 }
 
-// Cập nhật thông tin khách
-function update(key,value){
-  const c = customers.find(c => c.id === currentId);
-  if(!c) return;
-  c[key] = key==="price"?Number(value)||0:value;
-  save();
-  renderList();
-}
-
-// Xoá khách
 function removeCustomer(){
   if(confirm("Xoá khách này?")){
-    customers = customers.filter(c => c.id !== currentId);
-    currentId = null;
+    customers = customers.filter(c=>c.id!==currentId);
+    currentId=null;
     save();
     renderList();
-    detail.innerHTML = "<p>Chọn khách để xem chi tiết</p>";
+    detail.innerHTML="<p>Chọn khách để xem chi tiết</p>";
   }
 }
 
-// Load dữ liệu khi mở trang
+/* ---------- INIT ---------- */
 load();
 </script>
 
