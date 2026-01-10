@@ -2,10 +2,11 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<title>Spa CRM – Full Demo</title>
+<title>Spa CRM – Advanced Showcase</title>
+
 <style>
 body{font-family:Arial;background:#f4f6f8;padding:20px}
-.container{max-width:1200px;margin:auto}
+.container{max-width:1300px;margin:auto}
 h1{text-align:center;color:#e91e63}
 .card{background:#fff;padding:15px;border-radius:10px;margin-bottom:20px}
 input,select,textarea,button{width:100%;padding:8px;margin-top:6px}
@@ -18,18 +19,33 @@ textarea{height:70px}
 .doing{background:#ff9800}
 .done{background:#4caf50}
 .alert{background:#fff3cd;padding:10px;border-radius:6px;margin-bottom:15px}
+.search{display:flex;gap:10px}
+
+/* MODAL */
+.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;
+background:rgba(0,0,0,.5)}
+.modal-content{
+background:#fff;width:80%;max-width:900px;
+margin:40px auto;padding:20px;border-radius:10px;
+max-height:90%;overflow:auto
+}
+.close{float:right;font-size:20px;cursor:pointer}
+img.preview{max-width:45%;border-radius:6px;border:1px solid #ddd;margin:5px}
+.flex{display:flex;gap:10px;flex-wrap:wrap}
 </style>
 </head>
 
 <body>
 <div class="container">
-<h1>🌸 Spa Customer Management – Showcase</h1>
+<h1>🌸 Spa CRM – Advanced Demo</h1>
 
 <div id="birthdayAlert"></div>
 
+<!-- FORM -->
 <div class="card">
 <h3>Thêm / Sửa khách hàng</h3>
-<input id="name" placeholder="Tên khách hàng">
+
+<input id="customerName" placeholder="Tên khách hàng">
 <input id="phone" placeholder="Số điện thoại">
 <input type="date" id="birthday">
 <input id="service" placeholder="Dịch vụ sử dụng">
@@ -45,15 +61,29 @@ textarea{height:70px}
 
 <textarea id="roadmap" placeholder="Lộ trình (mỗi dòng = 1 buổi)"></textarea>
 
+<label>Ảnh Before</label>
+<input type="file" id="beforeImg" accept="image/*">
+
+<label>Ảnh After</label>
+<input type="file" id="afterImg" accept="image/*">
+
 <button onclick="saveCustomer()">Lưu khách hàng</button>
 </div>
 
+<!-- SEARCH -->
 <div class="card">
-<h3>📊 Thống kê nhanh</h3>
+<h3>🔍 Tìm kiếm khách hàng</h3>
+<input id="search" placeholder="Nhập tên hoặc số điện thoại" oninput="render()">
+</div>
+
+<!-- STATS -->
+<div class="card">
+<h3>📊 Thống kê</h3>
 <p><b>Tổng khách:</b> <span id="totalCus">0</span></p>
 <p><b>Tổng doanh thu:</b> <span id="totalMoney">0</span> đ</p>
 </div>
 
+<!-- LIST -->
 <div class="card">
 <h3>Danh sách khách hàng</h3>
 <table>
@@ -64,18 +94,21 @@ textarea{height:70px}
 <th>Dịch vụ</th>
 <th>Giá</th>
 <th>Trạng thái</th>
-<th>Hẹn tiếp</th>
-<th>Chi tiết</th>
+<th>Hẹn</th>
+<th>Mở</th>
 <th>Sửa</th>
 </tr>
 </thead>
 <tbody id="list"></tbody>
 </table>
 </div>
+</div>
 
-<div class="card" id="detailBox" style="display:none">
-<h3>Chi tiết khách hàng</h3>
-<div id="detail"></div>
+<!-- MODAL TAB -->
+<div class="modal" id="modal">
+<div class="modal-content">
+<span class="close" onclick="closeModal()">✖</span>
+<div id="modalBody"></div>
 </div>
 </div>
 
@@ -83,81 +116,116 @@ textarea{height:70px}
 let customers = JSON.parse(localStorage.getItem("spaCRM")) || [];
 let editingId = null;
 
+function toBase64(file, cb){
+  if(!file){cb("");return;}
+  const r=new FileReader();
+  r.onload=e=>cb(e.target.result);
+  r.readAsDataURL(file);
+}
+
 function saveCustomer(){
-  const data = {
-    id: editingId || Date.now(),
-    name:name.value, phone:phone.value, birthday:birthday.value,
-    service:service.value, price:+price.value,
-    consultant:consultant.value, staff:staff.value,
-    status:status.value, nextDate:nextDate.value,
-    roadmap:roadmap.value.split("\n")
-  };
-  if(!data.name||!data.phone){alert("Nhập tên và SĐT");return;}
-  editingId ? customers=customers.map(c=>c.id===editingId?data:c) : customers.push(data);
-  editingId=null;
-  localStorage.setItem("spaCRM",JSON.stringify(customers));
-  clearForm(); render();
+  toBase64(beforeImg.files[0], before=>{
+    toBase64(afterImg.files[0], after=>{
+      const data={
+        id: editingId||Date.now(),
+        name:customerName.value.trim(),
+        phone:phone.value.trim(),
+        birthday:birthday.value,
+        service:service.value,
+        price:+price.value||0,
+        consultant:consultant.value,
+        staff:staff.value,
+        status:status.value,
+        nextDate:nextDate.value,
+        roadmap:roadmap.value?roadmap.value.split("\n"):[],
+        beforeImg:before,
+        afterImg:after
+      };
+      if(!data.name||!data.phone){alert("Nhập tên và SĐT");return;}
+      editingId
+        ? customers=customers.map(c=>c.id===editingId?data:c)
+        : customers.push(data);
+      editingId=null;
+      localStorage.setItem("spaCRM",JSON.stringify(customers));
+      clearForm(); render();
+    });
+  });
 }
 
 function render(){
   list.innerHTML="";
-  let money=0;
-  customers.forEach(c=>{
-    money+=c.price||0;
-    list.innerHTML+=`
-    <tr>
-      <td>${c.name}</td>
-      <td>${c.phone}</td>
-      <td>${c.service}</td>
-      <td>${(c.price||0).toLocaleString()}đ</td>
-      <td><span class="badge ${c.status}">${c.status=="doing"?"Đang làm":"Xong"}</span></td>
-      <td>${c.nextDate||"-"}</td>
-      <td><button onclick="viewDetail(${c.id})">Xem</button></td>
-      <td><button onclick="editCustomer(${c.id})">Sửa</button></td>
-    </tr>`;
-  });
+  let total=0;
+  const key=search.value.toLowerCase();
+  customers
+    .filter(c=>c.name.toLowerCase().includes(key)||c.phone.includes(key))
+    .forEach(c=>{
+      total+=c.price;
+      list.innerHTML+=`
+      <tr>
+        <td>${c.name}</td>
+        <td>${c.phone}</td>
+        <td>${c.service}</td>
+        <td>${c.price.toLocaleString()}đ</td>
+        <td><span class="badge ${c.status}">${c.status=="doing"?"Đang làm":"Xong"}</span></td>
+        <td>${c.nextDate||"-"}</td>
+        <td><button onclick="openTab(${c.id})">Mở</button></td>
+        <td><button onclick="editCustomer(${c.id})">Sửa</button></td>
+      </tr>`;
+    });
   totalCus.innerText=customers.length;
-  totalMoney.innerText=money.toLocaleString();
+  totalMoney.innerText=total.toLocaleString();
   birthdayCheck();
 }
 
-function viewDetail(id){
+function openTab(id){
   const c=customers.find(x=>x.id===id);
-  detail.innerHTML=`
-  <p><b>Tên:</b> ${c.name}</p>
+  modalBody.innerHTML=`
+  <h3>${c.name}</h3>
   <p><b>SĐT:</b> ${c.phone}</p>
-  <p><b>Sinh nhật:</b> ${c.birthday||"-"}</p>
+  <p><b>Dịch vụ:</b> ${c.service}</p>
   <p><b>NV tư vấn:</b> ${c.consultant}</p>
   <p><b>NV chăm sóc:</b> ${c.staff}</p>
   <p><b>Lộ trình:</b></p>
-  <ul>${c.roadmap.map(r=>`<li>${r}</li>`).join("")}</ul>`;
-  detailBox.style.display="block";
+  <ul>${c.roadmap.map(r=>`<li>${r}</li>`).join("")}</ul>
+  <h4>Before / After</h4>
+  <div class="flex">
+    ${c.beforeImg?`<img src="${c.beforeImg}" class="preview">`:""}
+    ${c.afterImg?`<img src="${c.afterImg}" class="preview">`:""}
+  </div>`;
+  modal.style.display="block";
 }
+
+function closeModal(){modal.style.display="none"}
 
 function editCustomer(id){
   const c=customers.find(x=>x.id===id);
   editingId=id;
-  Object.assign(window,{
-    name:{value:c.name}, phone:{value:c.phone}, birthday:{value:c.birthday},
-    service:{value:c.service}, price:{value:c.price},
-    consultant:{value:c.consultant}, staff:{value:c.staff},
-    status:{value:c.status}, nextDate:{value:c.nextDate},
-    roadmap:{value:c.roadmap.join("\n")}
-  });
+  customerName.value=c.name;
+  phone.value=c.phone;
+  birthday.value=c.birthday;
+  service.value=c.service;
+  price.value=c.price;
+  consultant.value=c.consultant;
+  staff.value=c.staff;
+  status.value=c.status;
+  nextDate.value=c.nextDate;
+  roadmap.value=c.roadmap.join("\n");
   window.scrollTo(0,0);
 }
 
 function clearForm(){
-  name.value=phone.value=birthday.value=service.value=price.value=
-  consultant.value=staff.value=roadmap.value=nextDate.value="";
+  customerName.value=phone.value=birthday.value=service.value=price.value=
+  consultant.value=staff.value=nextDate.value=roadmap.value="";
+  beforeImg.value=afterImg.value="";
   status.value="doing";
 }
 
 function birthdayCheck(){
   const today=new Date().toISOString().slice(5,10);
   const listBD=customers.filter(c=>c.birthday?.slice(5,10)===today);
-  birthdayAlert.innerHTML=listBD.length?
-    `<div class="alert">🎂 Hôm nay sinh nhật: ${listBD.map(c=>c.name).join(", ")}</div>`:"";
+  birthdayAlert.innerHTML=listBD.length
+    ? `<div class="alert">🎂 Hôm nay sinh nhật: ${listBD.map(c=>c.name).join(", ")}</div>`
+    : "";
 }
 
 render();
