@@ -10,31 +10,53 @@
   --pink-bg:#fff5f7;
   --pink-border:#f3c6d3;
 }
-body{margin:0;font-family:Arial;background:var(--pink-bg)}
-header{background:var(--pink-main);color:#fff;padding:16px;font-size:20px;font-weight:600}
-.container{padding:16px}
+
+body{
+  margin:0;
+  font-family:Arial;
+  background:var(--pink-bg);
+}
+
+header{
+  background:var(--pink-main);
+  color:#fff;
+  padding:16px;
+  font-size:20px;
+  font-weight:600;
+}
+
+.container{
+  padding:16px;
+}
 
 .dashboard{
   display:grid;
   grid-template-columns:repeat(4,1fr);
   gap:12px;
-  margin-bottom:16px
+  margin-bottom:16px;
 }
+
 .box{
   background:#fff;
   padding:14px;
   border-radius:8px;
-  border:1px solid var(--pink-border)
+  border:1px solid var(--pink-border);
 }
+
 .box h3{margin:0;font-size:13px;color:#777}
 .box p{margin-top:6px;font-size:22px;font-weight:bold;color:var(--pink-main)}
 
-.layout{display:grid;grid-template-columns:340px 1fr;gap:16px}
+.layout{
+  display:grid;
+  grid-template-columns:340px 1fr;
+  gap:16px;
+}
+
 .left,.right{
   background:#fff;
   border-radius:8px;
   padding:14px;
-  border:1px solid var(--pink-border)
+  border:1px solid var(--pink-border);
 }
 
 input,select,textarea,button{
@@ -43,131 +65,145 @@ input,select,textarea,button{
   margin:6px 0;
   font-size:14px;
   border-radius:6px;
-  border:1px solid var(--pink-border)
+  border:1px solid var(--pink-border);
 }
+
 button{
   background:var(--pink-main);
   color:#fff;
   font-weight:600;
   border:none;
-  cursor:pointer
+  cursor:pointer;
 }
+
 .customer{
   padding:10px;
   border-bottom:1px solid var(--pink-border);
-  cursor:pointer
+  cursor:pointer;
 }
+
 .customer:hover{background:var(--pink-light)}
 .active{background:var(--pink-light);font-weight:600}
 .delete{background:#c44a6a;margin-top:12px}
 label{font-size:13px;color:#777}
 </style>
 </head>
-
 <body>
+
 <header>CUSTOMER MANAGEMENT</header>
 
 <div class="container">
 
-<div class="dashboard">
-  <div class="box"><h3>Tổng khách</h3><p id="totalCus">0</p></div>
-  <div class="box"><h3>Đang làm</h3><p id="doingCus">0</p></div>
-  <div class="box"><h3>Đã xong</h3><p id="doneCus">0</p></div>
-  <div class="box"><h3>Tổng doanh thu</h3><p id="totalMoney">0</p></div>
-</div>
+  <div class="dashboard">
+    <div class="box"><h3>Tổng khách</h3><p id="totalCus">0</p></div>
+    <div class="box"><h3>Đang làm</h3><p id="doingCus">0</p></div>
+    <div class="box"><h3>Đã xong</h3><p id="doneCus">0</p></div>
+    <div class="box"><h3>Tổng doanh thu</h3><p id="totalMoney">0</p></div>
+  </div>
 
-<div class="layout">
+  <div class="layout">
 
-<div class="left">
-<b>Thêm khách mới</b>
-<input id="customerName" placeholder="Tên khách">
-<input id="birthday" type="date">
-<select id="status">
-  <option>Đang làm</option>
-  <option>Đã xong</option>
-</select>
-<input id="staffCare" placeholder="Nhân viên chăm sóc">
-<input id="staffSale" placeholder="Nhân viên tư vấn">
-<input id="price" type="number" placeholder="Giá dịch vụ">
-<textarea id="route" placeholder="Lộ trình chăm sóc"></textarea>
-<button onclick="addCustomer()">Lưu khách</button>
+    <div class="left">
+      <b>Thêm khách mới</b>
+      <input id="customerName" placeholder="Tên khách">
+      <input id="birthday" type="date">
+      <select id="status">
+        <option>Đang làm</option>
+        <option>Đã xong</option>
+      </select>
+      <input id="staffCare" placeholder="Nhân viên chăm sóc">
+      <input id="staffSale" placeholder="Nhân viên tư vấn">
+      <input id="price" type="number" placeholder="Giá dịch vụ">
+      <textarea id="route" placeholder="Lộ trình chăm sóc"></textarea>
+      <button onclick="addCustomer()">Lưu khách</button>
 
-<hr>
-<b>Danh sách khách</b>
-<div id="list"></div>
-</div>
+      <hr>
+      <b>Tìm kiếm khách</b>
+      <input id="searchInput" placeholder="Nhập tên khách..." oninput="searchCustomer()">
 
-<div class="right" id="detail">
-<p>Chọn khách để xem chi tiết</p>
-</div>
+      <hr>
+      <b>Danh sách khách</b>
+      <div id="list"></div>
+    </div>
 
-</div>
+    <div class="right" id="detail">
+      <p>Chọn khách để xem chi tiết</p>
+    </div>
+
+  </div>
 </div>
 
 <script>
-let customers=[];
-let currentId=null;
+let customers = [];
+let currentId = null;
 
 function save(){
-  localStorage.setItem("customers",JSON.stringify(customers));
+  localStorage.setItem("customers", JSON.stringify(customers));
   renderDashboard();
 }
 
 function load(){
-  customers=JSON.parse(localStorage.getItem("customers")||"[]");
+  customers = JSON.parse(localStorage.getItem("customers") || "[]");
   renderDashboard();
   renderList();
 }
 
 function renderDashboard(){
-  totalCus.innerText=customers.length;
-  doingCus.innerText=customers.filter(c=>c.status==="Đang làm").length;
-  doneCus.innerText=customers.filter(c=>c.status==="Đã xong").length;
-  totalMoney.innerText=customers.reduce((s,c)=>s+(c.price||0),0);
+  totalCus.innerText = customers.length;
+  doingCus.innerText = customers.filter(c => c.status === "Đang làm").length;
+  doneCus.innerText = customers.filter(c => c.status === "Đã xong").length;
+  totalMoney.innerText = customers.reduce((s, c) => s + (c.price || 0), 0);
 }
 
 function addCustomer(){
   const nameVal = customerName.value.trim();
   if(!nameVal) return alert("Chưa nhập tên khách");
 
-  const c={
-    id:Date.now(),
-    name:nameVal,
-    birthday:birthday.value,
-    status:status.value,
-    staffCare:staffCare.value,
-    staffSale:staffSale.value,
-    price:Number(price.value)||0,
-    route:route.value
+  const c = {
+    id: Date.now(),
+    name: nameVal,
+    birthday: birthday.value,
+    status: status.value,
+    staffCare: staffCare.value,
+    staffSale: staffSale.value,
+    price: Number(price.value) || 0,
+    route: route.value
   };
 
   customers.push(c);
-  currentId=c.id;
+  currentId = c.id;
 
   save();
   renderList();
   openDetail(c.id);
 
-  customerName.value=birthday.value=staffCare.value=
-  staffSale.value=price.value=route.value="";
+  customerName.value = birthday.value = staffCare.value =
+  staffSale.value = price.value = route.value = "";
 }
 
 function renderList(){
-  list.innerHTML="";
-  customers.forEach(c=>{
-    const d=document.createElement("div");
-    d.className="customer"+(c.id===currentId?" active":"");
-    d.innerHTML=`<b>${c.name}</b><br>${c.status}`;
-    d.onclick=()=>openDetail(c.id);
-    list.appendChild(d);
-  });
+  const keyword = document.getElementById("searchInput").value.trim().toLowerCase();
+  list.innerHTML = "";
+  customers
+    .filter(c => c.name.toLowerCase().includes(keyword))
+    .forEach(c => {
+      const d = document.createElement("div");
+      d.className = "customer" + (c.id === currentId ? " active" : "");
+      d.innerHTML = `<b>${c.name}</b><br>${c.status}`;
+      d.onclick = () => openDetail(c.id);
+      list.appendChild(d);
+    });
+}
+
+function searchCustomer(){
+  renderList();
 }
 
 function openDetail(id){
-  currentId=id;
+  currentId = id;
   renderList();
-  const c=customers.find(x=>x.id===id);
-  detail.innerHTML=`
+  const c = customers.find(x => x.id === id);
+  detail.innerHTML = `
     <h3>${c.name}</h3>
 
     <label>Trạng thái</label>
@@ -193,19 +229,19 @@ function openDetail(id){
 }
 
 function update(key,value){
-  const c=customers.find(c=>c.id===currentId);
-  c[key]=key==="price"?Number(value)||0:value;
+  const c = customers.find(c => c.id === currentId);
+  c[key] = key==="price"?Number(value)||0:value;
   save();
   renderList();
 }
 
 function removeCustomer(){
   if(confirm("Xoá khách này?")){
-    customers=customers.filter(c=>c.id!==currentId);
-    currentId=null;
+    customers = customers.filter(c => c.id !== currentId);
+    currentId = null;
     save();
     renderList();
-    detail.innerHTML="<p>Chọn khách để xem chi tiết</p>";
+    detail.innerHTML = "<p>Chọn khách để xem chi tiết</p>";
   }
 }
 
