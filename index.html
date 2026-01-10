@@ -2,33 +2,35 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<title>Spa CRM – Professional Demo</title>
+<title>Spa CRM – Demo hoàn chỉnh</title>
 
 <style>
-body{font-family:Arial;background:#f4f6f8;padding:20px}
+body{font-family:Arial;background:#f2f4f7;margin:0;padding:20px}
 .container{max-width:1200px;margin:auto}
-h1{color:#e91e63}
-.card{background:#fff;padding:15px;border-radius:10px;margin-bottom:20px}
-input,select,textarea,button{width:100%;padding:8px;margin-top:6px}
-button{background:#e91e63;color:#fff;border:none;border-radius:6px;cursor:pointer}
+h1,h2{color:#e91e63}
+.card{background:#fff;padding:16px;border-radius:10px;margin-bottom:16px}
+input,select,textarea,button{
+  width:100%;padding:8px;margin-top:6px;border-radius:6px;border:1px solid #ccc
+}
+button{background:#e91e63;color:#fff;border:none;cursor:pointer}
 table{width:100%;border-collapse:collapse}
 th,td{border:1px solid #ddd;padding:8px;text-align:center}
 th{background:#fde4ec}
-.badge{padding:4px 8px;border-radius:5px;color:#fff;font-size:12px}
-.doing{background:#ff9800}
-.done{background:#4caf50}
-img.preview{max-width:45%;border:1px solid #ddd;border-radius:6px}
-.flex{display:flex;gap:10px;flex-wrap:wrap}
 .hidden{display:none}
 a{color:#e91e63;cursor:pointer;text-decoration:none}
+.badge{padding:4px 8px;border-radius:6px;color:#fff;font-size:12px}
+.doing{background:#ff9800}
+.done{background:#4caf50}
+.flex{display:flex;gap:10px;flex-wrap:wrap}
+img{max-width:45%;border-radius:6px;border:1px solid #ddd}
 </style>
 </head>
 
 <body>
 <div class="container">
 
-<!-- ====== LIST PAGE ====== -->
-<div id="listPage">
+<!-- ===== PAGE: LIST ===== -->
+<div id="pageList">
 <h1>🌸 Quản lý khách hàng Spa</h1>
 
 <div class="card">
@@ -36,15 +38,31 @@ a{color:#e91e63;cursor:pointer;text-decoration:none}
 </div>
 
 <div class="card">
+<h3>➕ Thêm khách hàng</h3>
+<input id="customerName" placeholder="Tên khách">
+<input id="phone" placeholder="Số điện thoại">
+<input id="birthday" type="date">
+<input id="service" placeholder="Dịch vụ">
+<input id="price" type="number" placeholder="Giá dịch vụ">
+<input id="consultant" placeholder="NV tư vấn">
+<input id="staff" placeholder="NV chăm sóc">
+<input id="nextDate" type="date">
+<select id="status">
+  <option value="doing">Đang làm</option>
+  <option value="done">Đã xong</option>
+</select>
+<textarea id="roadmap" placeholder="Lộ trình (mỗi dòng là 1 bước)"></textarea>
+<input id="beforeImg" placeholder="Link ảnh Before">
+<input id="afterImg" placeholder="Link ảnh After">
+
+<button onclick="addCustomer()">Lưu khách hàng</button>
+</div>
+
+<div class="card">
 <table>
 <thead>
 <tr>
-<th>Tên</th>
-<th>SĐT</th>
-<th>Dịch vụ</th>
-<th>Giá</th>
-<th>Trạng thái</th>
-<th>Hồ sơ</th>
+<th>Tên</th><th>SĐT</th><th>Dịch vụ</th><th>Trạng thái</th><th>Hồ sơ</th>
 </tr>
 </thead>
 <tbody id="list"></tbody>
@@ -52,9 +70,9 @@ a{color:#e91e63;cursor:pointer;text-decoration:none}
 </div>
 </div>
 
-<!-- ====== DETAIL PAGE ====== -->
-<div id="detailPage" class="hidden">
-<a onclick="goHome()">← Quay lại danh sách</a>
+<!-- ===== PAGE: DETAIL ===== -->
+<div id="pageDetail" class="hidden">
+<a onclick="goHome()">← Quay lại</a>
 <div class="card" id="detail"></div>
 </div>
 
@@ -62,6 +80,38 @@ a{color:#e91e63;cursor:pointer;text-decoration:none}
 
 <script>
 let customers = JSON.parse(localStorage.getItem("spaCRM")) || [];
+
+function save(){
+  localStorage.setItem("spaCRM",JSON.stringify(customers));
+}
+
+function addCustomer(){
+  if(!customerName.value||!phone.value){
+    alert("Thiếu tên hoặc SĐT"); return;
+  }
+  customers.push({
+    id:Date.now(),
+    name:customerName.value,
+    phone:phone.value,
+    birthday:birthday.value,
+    service:service.value,
+    price:price.value,
+    consultant:consultant.value,
+    staff:staff.value,
+    nextDate:nextDate.value,
+    status:status.value,
+    roadmap:roadmap.value.split("\n"),
+    beforeImg:beforeImg.value,
+    afterImg:afterImg.value
+  });
+  save();
+  clearForm();
+  renderList();
+}
+
+function clearForm(){
+  document.querySelectorAll("input,textarea").forEach(i=>i.value="");
+}
 
 function renderList(){
   const key = search.value.toLowerCase();
@@ -74,64 +124,59 @@ function renderList(){
         <td>${c.name}</td>
         <td>${c.phone}</td>
         <td>${c.service}</td>
-        <td>${c.price?.toLocaleString()||0}đ</td>
         <td><span class="badge ${c.status}">
           ${c.status==="doing"?"Đang làm":"Hoàn thành"}
         </span></td>
-        <td>
-          <a onclick="openCustomer(${c.id})">Mở</a>
-        </td>
+        <td><a onclick="openCustomer(${c.id})">Mở</a></td>
       </tr>`;
     });
 }
 
 function openCustomer(id){
-  location.hash = "customer-" + id;
+  location.hash="customer-"+id;
 }
 
 function goHome(){
-  location.hash = "";
+  location.hash="";
 }
 
 function renderDetail(id){
   const c = customers.find(x=>x.id==id);
   if(!c) return;
-
   detail.innerHTML=`
     <h2>${c.name}</h2>
     <p><b>SĐT:</b> ${c.phone}</p>
     <p><b>Sinh nhật:</b> ${c.birthday||"-"}</p>
     <p><b>Dịch vụ:</b> ${c.service}</p>
-    <p><b>Giá:</b> ${c.price?.toLocaleString()||0}đ</p>
-    <p><b>NV tư vấn:</b> ${c.consultant||"-"}</p>
-    <p><b>NV chăm sóc:</b> ${c.staff||"-"}</p>
-    <p><b>Ngày hẹn tiếp:</b> ${c.nextDate||"-"}</p>
+    <p><b>Giá:</b> ${c.price}đ</p>
+    <p><b>NV tư vấn:</b> ${c.consultant}</p>
+    <p><b>NV chăm sóc:</b> ${c.staff}</p>
+    <p><b>Ngày hẹn tiếp:</b> ${c.nextDate}</p>
 
-    <h3>Lộ trình chăm sóc</h3>
-    <ul>${(c.roadmap||[]).map(r=>`<li>${r}</li>`).join("")}</ul>
+    <h3>Lộ trình</h3>
+    <ul>${c.roadmap.map(r=>`<li>${r}</li>`).join("")}</ul>
 
     <h3>Before / After</h3>
     <div class="flex">
-      ${c.beforeImg?`<img src="${c.beforeImg}" class="preview">`:""}
-      ${c.afterImg?`<img src="${c.afterImg}" class="preview">`:""}
+      ${c.beforeImg?`<img src="${c.beforeImg}">`:""}
+      ${c.afterImg?`<img src="${c.afterImg}">`:""}
     </div>
   `;
 }
 
 function router(){
   if(location.hash.startsWith("#customer-")){
-    const id = location.hash.replace("#customer-","");
-    listPage.classList.add("hidden");
-    detailPage.classList.remove("hidden");
-    renderDetail(id);
+    pageList.classList.add("hidden");
+    pageDetail.classList.remove("hidden");
+    renderDetail(location.hash.replace("#customer-",""));
   } else {
-    detailPage.classList.add("hidden");
-    listPage.classList.remove("hidden");
+    pageDetail.classList.add("hidden");
+    pageList.classList.remove("hidden");
     renderList();
   }
 }
 
-window.addEventListener("hashchange", router);
+window.addEventListener("hashchange",router);
 router();
 </script>
 
