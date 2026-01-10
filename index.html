@@ -2,173 +2,175 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<title>Spa CRM – Final Demo</title>
-
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-
+<title>SPA CRM Demo</title>
 <style>
-body{font-family:Arial;background:#f2f4f7;padding:20px}
-.card{background:#fff;padding:16px;border-radius:10px;margin-bottom:16px}
-input,textarea,button{width:100%;padding:8px;margin-top:6px}
-button{background:#e91e63;color:#fff;border:none;border-radius:6px}
+body{font-family:Arial;background:#f4f6f8;margin:0}
+header{background:#b85c8a;color:#fff;padding:15px;text-align:center}
+.container{padding:20px}
+input,select,textarea,button{padding:8px;margin:5px 0;width:100%}
+button{background:#b85c8a;color:#fff;border:none;cursor:pointer}
+button:hover{opacity:.9}
+.card{background:#fff;padding:15px;margin-bottom:10px;border-radius:6px}
 .hidden{display:none}
-table{width:100%;border-collapse:collapse}
-th,td{border:1px solid #ddd;padding:8px;text-align:center}
-a{color:#e91e63;cursor:pointer}
+.flex{display:flex;gap:10px}
+.list-item{cursor:pointer}
 </style>
 </head>
 
 <body>
 
+<header>SPA CUSTOMER MANAGEMENT</header>
+
+<div class="container">
+
 <!-- LOGIN -->
-<div id="loginPage" class="card">
-<h2>🔐 Đăng nhập</h2>
-<input id="username" placeholder="Tên đăng nhập">
-<input id="password" type="password" placeholder="Mật khẩu">
+<div id="loginBox" class="card">
+<h3>Đăng nhập</h3>
+<input id="loginUser" placeholder="Username">
+<input id="loginPass" type="password" placeholder="Password">
 <button onclick="login()">Login</button>
-<p style="color:#888">Tài khoản mặc định: admin / 123456</p>
 </div>
 
-<!-- APP -->
-<div id="app" class="hidden">
+<!-- MAIN -->
+<div id="main" class="hidden">
 
-<div class="card">
 <button onclick="logout()">Đăng xuất</button>
-<button onclick="backup()">⬇ Backup dữ liệu</button>
-<input type="file" onchange="restore(this)">
+<button onclick="showChangePass()">Đổi mật khẩu</button>
+
+<hr>
+
+<input id="search" placeholder="Tìm khách..." onkeyup="renderCustomers()">
+
+<h3>Thêm khách hàng</h3>
+<div class="card">
+<input id="name" placeholder="Tên khách">
+<input id="birthday" type="date">
+<select id="status">
+<option>Đang làm</option>
+<option>Đã xong</option>
+</select>
+<input id="staffCare" placeholder="Nhân viên chăm sóc">
+<input id="staffSale" placeholder="Nhân viên tư vấn">
+<input id="price" placeholder="Giá dịch vụ">
+<textarea id="route" placeholder="Lộ trình chăm sóc"></textarea>
+<button onclick="addCustomer()">Lưu khách</button>
 </div>
 
-<div class="card">
-<h3>➕ Thêm khách</h3>
-<input id="customerName" placeholder="Tên khách">
-<input id="phone" placeholder="SĐT">
-<textarea id="roadmap" placeholder="Lộ trình (mỗi dòng 1 bước)"></textarea>
-<input id="beforeImg" placeholder="Link ảnh Before">
-<input id="afterImg" placeholder="Link ảnh After">
-<button onclick="addCustomer()">Lưu</button>
+<h3>Danh sách khách</h3>
+<div id="customerList"></div>
+
 </div>
 
-<div class="card">
-<table>
-<thead><tr><th>Tên</th><th>SĐT</th><th>Hồ sơ</th></tr></thead>
-<tbody id="list"></tbody>
-</table>
+<!-- DETAIL -->
+<div id="detail" class="hidden">
+<button onclick="back()">← Quay lại</button>
+<div id="detailContent"></div>
+</div>
+
+<!-- CHANGE PASS -->
+<div id="changePass" class="hidden card">
+<h3>Đổi mật khẩu</h3>
+<input id="oldPass" type="password" placeholder="Mật khẩu cũ">
+<input id="newPass" type="password" placeholder="Mật khẩu mới">
+<button onclick="changePassword()">Xác nhận</button>
 </div>
 
 </div>
 
 <script>
-/* ================= FIREBASE ================= */
-const firebaseConfig = {
-  apiKey: "DÁN_CỦA_BẠN",
-  authDomain: "DÁN_CỦA_BẠN",
-  projectId: "DÁN_CỦA_BẠN"
-};
+/* ===== AUTH ===== */
+const defaultUser = {username:"admin",password:"123456"}
+if(!localStorage.getItem("user")) localStorage.setItem("user",JSON.stringify(defaultUser))
 
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-
-/* ================= SHA-256 ================= */
-async function sha256(text){
-  const data = new TextEncoder().encode(text);
-  const hash = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(hash))
-    .map(b=>b.toString(16).padStart(2,"0")).join("");
-}
-
-/* ================= AUTH ================= */
-async function login(){
-  try{
-    const u = username.value;
-    const p = password.value;
-    const hash = await sha256(p);
-
-    const snap = await db.collection("users")
-      .where("username","==",u).get();
-
-    if(snap.empty){ alert("Sai tài khoản"); return; }
-
-    const user = snap.docs[0].data();
-    if(user.passwordHash !== hash){
-      alert("Sai mật khẩu"); return;
-    }
-
-    localStorage.isLogin="true";
-    loginPage.classList.add("hidden");
-    app.classList.remove("hidden");
-    loadCustomers();
-
-  }catch(e){
-    alert("Lỗi đăng nhập: " + e.message);
-  }
+function login(){
+ const u=loginUser.value,p=loginPass.value
+ const user=JSON.parse(localStorage.getItem("user"))
+ if(u===user.username && p===user.password){
+  localStorage.setItem("login","1")
+  loginBox.classList.add("hidden")
+  main.classList.remove("hidden")
+  renderCustomers()
+ }else alert("Sai tài khoản")
 }
 
 function logout(){
-  localStorage.clear();
-  location.reload();
+ localStorage.removeItem("login")
+ location.reload()
 }
 
-/* ================= CRM ================= */
-async function addCustomer(){
-  if(!customerName.value || !phone.value){
-    alert("Thiếu tên hoặc SĐT"); return;
-  }
-  await db.collection("customers").add({
-    name:customerName.value,
-    phone:phone.value,
-    roadmap:roadmap.value.split("\n"),
-    beforeImg:beforeImg.value,
-    afterImg:afterImg.value
-  });
-  loadCustomers();
+if(localStorage.getItem("login")){
+ loginBox.classList.add("hidden")
+ main.classList.remove("hidden")
 }
 
-async function loadCustomers(){
-  list.innerHTML="";
-  const snap = await db.collection("customers").get();
-  snap.forEach(doc=>{
-    const c=doc.data();
-    list.innerHTML+=`
-      <tr>
-        <td>${c.name}</td>
-        <td>${c.phone}</td>
-        <td><a onclick="alert('Trang hồ sơ có thể tách riêng tiếp')">Mở</a></td>
-      </tr>`;
-  });
+/* ===== CHANGE PASS ===== */
+function showChangePass(){
+ changePass.classList.toggle("hidden")
+}
+function changePassword(){
+ const user=JSON.parse(localStorage.getItem("user"))
+ if(oldPass.value!==user.password) return alert("Sai mật khẩu cũ")
+ user.password=newPass.value
+ localStorage.setItem("user",JSON.stringify(user))
+ alert("Đổi mật khẩu thành công")
+ changePass.classList.add("hidden")
 }
 
-/* ================= BACKUP ================= */
-async function backup(){
-  const snap = await db.collection("customers").get();
-  const data=[];
-  snap.forEach(d=>data.push(d.data()));
-  const blob=new Blob([JSON.stringify(data)],{type:"application/json"});
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(blob);
-  a.download="spa-backup.json";
-  a.click();
+/* ===== CUSTOMER ===== */
+let customers=JSON.parse(localStorage.getItem("customers")||"[]")
+
+function save(){localStorage.setItem("customers",JSON.stringify(customers))}
+
+function addCustomer(){
+ const c={
+  id:Date.now(),
+  name:name.value,
+  birthday:birthday.value,
+  status:status.value,
+  staffCare:staffCare.value,
+  staffSale:staffSale.value,
+  price:price.value,
+  route:route.value,
+  before:"",
+  after:""
+ }
+ customers.push(c)
+ save()
+ renderCustomers()
 }
 
-/* ================= RESTORE ================= */
-function restore(input){
-  const reader=new FileReader();
-  reader.onload=async e=>{
-    const data=JSON.parse(e.target.result);
-    for(const c of data){
-      await db.collection("customers").add(c);
-    }
-    loadCustomers();
-  };
-  reader.readAsText(input.files[0]);
+function renderCustomers(){
+ const key=search.value.toLowerCase()
+ customerList.innerHTML=""
+ customers.filter(c=>c.name.toLowerCase().includes(key)).forEach(c=>{
+  const d=document.createElement("div")
+  d.className="card list-item"
+  d.innerHTML=`<b>${c.name}</b> - ${c.status}`
+  d.onclick=()=>openDetail(c.id)
+  customerList.appendChild(d)
+ })
 }
 
-/* ================= AUTO LOGIN ================= */
-if(localStorage.isLogin==="true"){
-  loginPage.classList.add("hidden");
-  app.classList.remove("hidden");
-  loadCustomers();
+function openDetail(id){
+ const c=customers.find(x=>x.id===id)
+ main.classList.add("hidden")
+ detail.classList.remove("hidden")
+ detailContent.innerHTML=`
+ <h3>${c.name}</h3>
+ <p>Ngày sinh: ${c.birthday}</p>
+ <p>Trạng thái: ${c.status}</p>
+ <p>NV chăm sóc: ${c.staffCare}</p>
+ <p>NV tư vấn: ${c.staffSale}</p>
+ <p>Giá: ${c.price}</p>
+ <textarea onchange="c.route=this.value;save()">${c.route}</textarea>
+ <p>Before: <input type="file"></p>
+ <p>After: <input type="file"></p>
+ `
+}
+
+function back(){
+ detail.classList.add("hidden")
+ main.classList.remove("hidden")
 }
 </script>
 
