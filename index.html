@@ -2,8 +2,9 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<title>Spa CRM – Full Cloud Demo</title>
+<title>Spa CRM – Final Demo</title>
 
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
@@ -15,38 +16,43 @@ button{background:#e91e63;color:#fff;border:none;border-radius:6px}
 .hidden{display:none}
 table{width:100%;border-collapse:collapse}
 th,td{border:1px solid #ddd;padding:8px;text-align:center}
+a{color:#e91e63;cursor:pointer}
 </style>
 </head>
 
 <body>
 
-<div id="login" class="card">
-<h2>Đăng nhập</h2>
-<input id="user" placeholder="admin">
-<input id="pass" type="password" placeholder="123456">
+<!-- LOGIN -->
+<div id="loginPage" class="card">
+<h2>🔐 Đăng nhập</h2>
+<input id="username" placeholder="Tên đăng nhập">
+<input id="password" type="password" placeholder="Mật khẩu">
 <button onclick="login()">Login</button>
+<p style="color:#888">Tài khoản mặc định: admin / 123456</p>
 </div>
 
+<!-- APP -->
 <div id="app" class="hidden">
 
 <div class="card">
+<button onclick="logout()">Đăng xuất</button>
 <button onclick="backup()">⬇ Backup dữ liệu</button>
 <input type="file" onchange="restore(this)">
 </div>
 
 <div class="card">
-<h3>Thêm khách</h3>
-<input id="name" placeholder="Tên khách">
+<h3>➕ Thêm khách</h3>
+<input id="customerName" placeholder="Tên khách">
 <input id="phone" placeholder="SĐT">
-<textarea id="roadmap" placeholder="Lộ trình"></textarea>
-<input id="beforeImg" placeholder="Link before">
-<input id="afterImg" placeholder="Link after">
-<button onclick="add()">Lưu</button>
+<textarea id="roadmap" placeholder="Lộ trình (mỗi dòng 1 bước)"></textarea>
+<input id="beforeImg" placeholder="Link ảnh Before">
+<input id="afterImg" placeholder="Link ảnh After">
+<button onclick="addCustomer()">Lưu</button>
 </div>
 
 <div class="card">
 <table>
-<thead><tr><th>Tên</th><th>SĐT</th></tr></thead>
+<thead><tr><th>Tên</th><th>SĐT</th><th>Hồ sơ</th></tr></thead>
 <tbody id="list"></tbody>
 </table>
 </div>
@@ -54,38 +60,72 @@ th,td{border:1px solid #ddd;padding:8px;text-align:center}
 </div>
 
 <script>
-// ===== AUTH =====
-function login(){
-  if(user.value==="admin" && pass.value==="123456"){
-    localStorage.isLogin=true;
-    login.classList.add("hidden");
-    app.classList.remove("hidden");
-    load();
-  }
-}
-
-// ===== FIREBASE =====
+/* ================= FIREBASE ================= */
 const firebaseConfig = {
-  apiKey: "XXX",
-  authDomain: "XXX",
-  projectId: "XXX",
+  apiKey: "DÁN_CỦA_BẠN",
+  authDomain: "DÁN_CỦA_BẠN",
+  projectId: "DÁN_CỦA_BẠN"
 };
+
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// ===== CRUD =====
-async function add(){
+/* ================= SHA-256 ================= */
+async function sha256(text){
+  const data = new TextEncoder().encode(text);
+  const hash = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(hash))
+    .map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+
+/* ================= AUTH ================= */
+async function login(){
+  try{
+    const u = username.value;
+    const p = password.value;
+    const hash = await sha256(p);
+
+    const snap = await db.collection("users")
+      .where("username","==",u).get();
+
+    if(snap.empty){ alert("Sai tài khoản"); return; }
+
+    const user = snap.docs[0].data();
+    if(user.passwordHash !== hash){
+      alert("Sai mật khẩu"); return;
+    }
+
+    localStorage.isLogin="true";
+    loginPage.classList.add("hidden");
+    app.classList.remove("hidden");
+    loadCustomers();
+
+  }catch(e){
+    alert("Lỗi đăng nhập: " + e.message);
+  }
+}
+
+function logout(){
+  localStorage.clear();
+  location.reload();
+}
+
+/* ================= CRM ================= */
+async function addCustomer(){
+  if(!customerName.value || !phone.value){
+    alert("Thiếu tên hoặc SĐT"); return;
+  }
   await db.collection("customers").add({
-    name:name.value,
+    name:customerName.value,
     phone:phone.value,
     roadmap:roadmap.value.split("\n"),
     beforeImg:beforeImg.value,
     afterImg:afterImg.value
   });
-  load();
+  loadCustomers();
 }
 
-async function load(){
+async function loadCustomers(){
   list.innerHTML="";
   const snap = await db.collection("customers").get();
   snap.forEach(doc=>{
@@ -94,11 +134,12 @@ async function load(){
       <tr>
         <td>${c.name}</td>
         <td>${c.phone}</td>
+        <td><a onclick="alert('Trang hồ sơ có thể tách riêng tiếp')">Mở</a></td>
       </tr>`;
   });
 }
 
-// ===== BACKUP =====
+/* ================= BACKUP ================= */
 async function backup(){
   const snap = await db.collection("customers").get();
   const data=[];
@@ -110,18 +151,24 @@ async function backup(){
   a.click();
 }
 
-// ===== RESTORE =====
+/* ================= RESTORE ================= */
 function restore(input){
-  const file=input.files[0];
   const reader=new FileReader();
   reader.onload=async e=>{
     const data=JSON.parse(e.target.result);
     for(const c of data){
       await db.collection("customers").add(c);
     }
-    load();
+    loadCustomers();
   };
-  reader.readAsText(file);
+  reader.readAsText(input.files[0]);
+}
+
+/* ================= AUTO LOGIN ================= */
+if(localStorage.isLogin==="true"){
+  loginPage.classList.add("hidden");
+  app.classList.remove("hidden");
+  loadCustomers();
 }
 </script>
 
