@@ -1,3 +1,3 @@
 # spa-demo
-Web demo quản lý khách hàng spa
+Web demo quản lý khách hàng
 
