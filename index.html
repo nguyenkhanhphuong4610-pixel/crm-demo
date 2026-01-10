@@ -2,18 +2,73 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<title>SPA CRM Demo</title>
+<title>SPA CRM - Quản lý khách hàng</title>
 <style>
-body{font-family:Arial;background:#f4f6f8;margin:0}
-header{background:#b85c8a;color:#fff;padding:15px;text-align:center}
-.container{padding:20px}
-input,select,textarea,button{padding:8px;margin:5px 0;width:100%}
-button{background:#b85c8a;color:#fff;border:none;cursor:pointer}
-button:hover{opacity:.9}
-.card{background:#fff;padding:15px;margin-bottom:10px;border-radius:6px}
-.hidden{display:none}
-.flex{display:flex;gap:10px}
-.list-item{cursor:pointer}
+body{
+  font-family: Arial, sans-serif;
+  background:#f4f6f8;
+  margin:0;
+}
+header{
+  background:#8b3f64;
+  color:#fff;
+  padding:16px;
+  text-align:center;
+  font-size:20px;
+  font-weight:600;
+}
+.container{
+  padding:20px;
+}
+input, select, textarea, button{
+  width:100%;
+  padding:8px;
+  margin:6px 0;
+  box-sizing:border-box;
+  font-size:14px;
+}
+button{
+  background:#8b3f64;
+  color:#fff;
+  border:none;
+  border-radius:4px;
+  cursor:pointer;
+}
+button:hover{
+  opacity:0.9;
+}
+.card{
+  background:#fff;
+  padding:16px;
+  margin-bottom:14px;
+  border-radius:6px;
+}
+.hidden{
+  display:none;
+}
+.list-item{
+  cursor:pointer;
+}
+.list-item:hover{
+  background:#f2f2f2;
+}
+label{
+  font-size:13px;
+  color:#555;
+}
+.section-title{
+  font-size:16px;
+  font-weight:600;
+  margin:18px 0 8px;
+}
+.back-btn{
+  margin-bottom:12px;
+  background:#666;
+}
+.delete-btn{
+  background:#b02a2a;
+  margin-top:12px;
+}
 </style>
 </head>
 
@@ -23,155 +78,156 @@ button:hover{opacity:.9}
 
 <div class="container">
 
-<!-- LOGIN -->
-<div id="loginBox" class="card">
-<h3>Đăng nhập</h3>
-<input id="loginUser" placeholder="Username">
-<input id="loginPass" type="password" placeholder="Password">
-<button onclick="login()">Login</button>
-</div>
-
 <!-- MAIN -->
-<div id="main" class="hidden">
+<div id="main">
 
-<button onclick="logout()">Đăng xuất</button>
-<button onclick="showChangePass()">Đổi mật khẩu</button>
+<input id="search" placeholder="Tìm kiếm khách hàng theo tên" onkeyup="renderCustomers()">
 
-<hr>
-
-<input id="search" placeholder="Tìm khách..." onkeyup="renderCustomers()">
-
-<h3>Thêm khách hàng</h3>
+<div class="section-title">Thêm khách hàng</div>
 <div class="card">
-<input id="name" placeholder="Tên khách">
-<input id="birthday" type="date">
-<select id="status">
-<option>Đang làm</option>
-<option>Đã xong</option>
-</select>
-<input id="staffCare" placeholder="Nhân viên chăm sóc">
-<input id="staffSale" placeholder="Nhân viên tư vấn">
-<input id="price" placeholder="Giá dịch vụ">
-<textarea id="route" placeholder="Lộ trình chăm sóc"></textarea>
-<button onclick="addCustomer()">Lưu khách</button>
+  <label>Tên khách hàng</label>
+  <input id="name">
+
+  <label>Ngày sinh</label>
+  <input id="birthday" type="date">
+
+  <label>Trạng thái</label>
+  <select id="status">
+    <option>Đang làm</option>
+    <option>Đã xong</option>
+  </select>
+
+  <label>Nhân viên chăm sóc</label>
+  <input id="staffCare">
+
+  <label>Nhân viên tư vấn</label>
+  <input id="staffSale">
+
+  <label>Giá dịch vụ</label>
+  <input id="price">
+
+  <label>Lộ trình chăm sóc</label>
+  <textarea id="route"></textarea>
+
+  <button onclick="addCustomer()">Lưu khách hàng</button>
 </div>
 
-<h3>Danh sách khách</h3>
+<div class="section-title">Danh sách khách hàng</div>
 <div id="customerList"></div>
 
 </div>
 
 <!-- DETAIL -->
 <div id="detail" class="hidden">
-<button onclick="back()">← Quay lại</button>
-<div id="detailContent"></div>
-</div>
-
-<!-- CHANGE PASS -->
-<div id="changePass" class="hidden card">
-<h3>Đổi mật khẩu</h3>
-<input id="oldPass" type="password" placeholder="Mật khẩu cũ">
-<input id="newPass" type="password" placeholder="Mật khẩu mới">
-<button onclick="changePassword()">Xác nhận</button>
+<button class="back-btn" onclick="back()">Quay lại danh sách</button>
+<div id="detailContent" class="card"></div>
 </div>
 
 </div>
 
 <script>
-/* ===== AUTH ===== */
-const defaultUser = {username:"admin",password:"123456"}
-if(!localStorage.getItem("user")) localStorage.setItem("user",JSON.stringify(defaultUser))
+let customers = JSON.parse(localStorage.getItem("customers") || "[]");
 
-function login(){
- const u=loginUser.value,p=loginPass.value
- const user=JSON.parse(localStorage.getItem("user"))
- if(u===user.username && p===user.password){
-  localStorage.setItem("login","1")
-  loginBox.classList.add("hidden")
-  main.classList.remove("hidden")
-  renderCustomers()
- }else alert("Sai tài khoản")
+function save(){
+  localStorage.setItem("customers", JSON.stringify(customers));
 }
-
-function logout(){
- localStorage.removeItem("login")
- location.reload()
-}
-
-if(localStorage.getItem("login")){
- loginBox.classList.add("hidden")
- main.classList.remove("hidden")
-}
-
-/* ===== CHANGE PASS ===== */
-function showChangePass(){
- changePass.classList.toggle("hidden")
-}
-function changePassword(){
- const user=JSON.parse(localStorage.getItem("user"))
- if(oldPass.value!==user.password) return alert("Sai mật khẩu cũ")
- user.password=newPass.value
- localStorage.setItem("user",JSON.stringify(user))
- alert("Đổi mật khẩu thành công")
- changePass.classList.add("hidden")
-}
-
-/* ===== CUSTOMER ===== */
-let customers=JSON.parse(localStorage.getItem("customers")||"[]")
-
-function save(){localStorage.setItem("customers",JSON.stringify(customers))}
 
 function addCustomer(){
- const c={
-  id:Date.now(),
-  name:name.value,
-  birthday:birthday.value,
-  status:status.value,
-  staffCare:staffCare.value,
-  staffSale:staffSale.value,
-  price:price.value,
-  route:route.value,
-  before:"",
-  after:""
- }
- customers.push(c)
- save()
- renderCustomers()
+  if(!name.value.trim()){
+    alert("Vui lòng nhập tên khách hàng");
+    return;
+  }
+
+  customers.push({
+    id: Date.now(),
+    name: name.value,
+    birthday: birthday.value,
+    status: status.value,
+    staffCare: staffCare.value,
+    staffSale: staffSale.value,
+    price: price.value,
+    route: route.value
+  });
+
+  save();
+  name.value = birthday.value = staffCare.value =
+  staffSale.value = price.value = route.value = "";
+
+  renderCustomers();
 }
 
 function renderCustomers(){
- const key=search.value.toLowerCase()
- customerList.innerHTML=""
- customers.filter(c=>c.name.toLowerCase().includes(key)).forEach(c=>{
-  const d=document.createElement("div")
-  d.className="card list-item"
-  d.innerHTML=`<b>${c.name}</b> - ${c.status}`
-  d.onclick=()=>openDetail(c.id)
-  customerList.appendChild(d)
- })
+  const key = search.value.toLowerCase();
+  customerList.innerHTML = "";
+
+  customers
+    .filter(c => c.name.toLowerCase().includes(key))
+    .forEach(c => {
+      const div = document.createElement("div");
+      div.className = "card list-item";
+      div.innerHTML = `
+        <strong>${c.name}</strong><br>
+        Trạng thái: ${c.status}<br>
+        Nhân viên chăm sóc: ${c.staffCare || "-"}
+      `;
+      div.onclick = () => openDetail(c.id);
+      customerList.appendChild(div);
+    });
 }
 
 function openDetail(id){
- const c=customers.find(x=>x.id===id)
- main.classList.add("hidden")
- detail.classList.remove("hidden")
- detailContent.innerHTML=`
- <h3>${c.name}</h3>
- <p>Ngày sinh: ${c.birthday}</p>
- <p>Trạng thái: ${c.status}</p>
- <p>NV chăm sóc: ${c.staffCare}</p>
- <p>NV tư vấn: ${c.staffSale}</p>
- <p>Giá: ${c.price}</p>
- <textarea onchange="c.route=this.value;save()">${c.route}</textarea>
- <p>Before: <input type="file"></p>
- <p>After: <input type="file"></p>
- `
+  const c = customers.find(x => x.id === id);
+  main.classList.add("hidden");
+  detail.classList.remove("hidden");
+
+  detailContent.innerHTML = `
+    <div class="section-title">Thông tin khách hàng</div>
+
+    <label>Trạng thái</label>
+    <select onchange="update(${c.id}, 'status', this.value)">
+      <option ${c.status==="Đang làm"?"selected":""}>Đang làm</option>
+      <option ${c.status==="Đã xong"?"selected":""}>Đã xong</option>
+    </select>
+
+    <label>Nhân viên chăm sóc</label>
+    <input value="${c.staffCare}" onchange="update(${c.id}, 'staffCare', this.value)">
+
+    <label>Nhân viên tư vấn</label>
+    <input value="${c.staffSale}" onchange="update(${c.id}, 'staffSale', this.value)">
+
+    <label>Giá dịch vụ</label>
+    <input value="${c.price}" onchange="update(${c.id}, 'price', this.value)">
+
+    <label>Lộ trình chăm sóc</label>
+    <textarea onchange="update(${c.id}, 'route', this.value)">${c.route}</textarea>
+
+    <button class="delete-btn" onclick="removeCustomer(${c.id})">
+      Xoá khách hàng
+    </button>
+  `;
+}
+
+function update(id, key, value){
+  const c = customers.find(x => x.id === id);
+  c[key] = value;
+  save();
+}
+
+function removeCustomer(id){
+  if(confirm("Bạn có chắc muốn xoá khách hàng này?")){
+    customers = customers.filter(c => c.id !== id);
+    save();
+    back();
+    renderCustomers();
+  }
 }
 
 function back(){
- detail.classList.add("hidden")
- main.classList.remove("hidden")
+  detail.classList.add("hidden");
+  main.classList.remove("hidden");
 }
+
+renderCustomers();
 </script>
 
 </body>
