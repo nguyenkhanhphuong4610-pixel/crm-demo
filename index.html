@@ -2,18 +2,21 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<title>Spa CRM – Demo Showcase</title>
+<title>Spa CRM – Showcase</title>
 <style>
 body{font-family:Arial;background:#f4f6f8;padding:20px}
-.container{max-width:1000px;margin:auto}
+.container{max-width:1100px;margin:auto}
 h1{text-align:center;color:#e91e63}
 .card{background:#fff;padding:15px;border-radius:10px;margin-bottom:20px}
-input,button{padding:10px;width:100%;margin-top:8px}
+input,select,textarea,button{width:100%;padding:8px;margin-top:6px}
 button{background:#e91e63;color:#fff;border:none;border-radius:6px;cursor:pointer}
 table{width:100%;border-collapse:collapse;margin-top:10px}
-th,td{border:1px solid #ddd;padding:8px;text-align:center}
+th,td{border:1px solid #ddd;padding:8px;text-align:center;font-size:14px}
 th{background:#fde4ec}
-.detail{background:#fce4ec;padding:10px;border-radius:6px;margin-top:10px}
+textarea{height:70px}
+.badge{padding:4px 8px;border-radius:5px;color:#fff;font-size:12px}
+.doing{background:#ff9800}
+.done{background:#4caf50}
 </style>
 </head>
 
@@ -21,16 +24,26 @@ th{background:#fde4ec}
 <div class="container">
 <h1>🌸 Spa Customer Management – Demo</h1>
 
-<!-- FORM -->
 <div class="card">
-<h3>Thêm khách hàng</h3>
+<h3>Thêm / Sửa khách hàng</h3>
 <input id="name" placeholder="Tên khách hàng">
 <input id="phone" placeholder="Số điện thoại">
-<input id="service" placeholder="Dịch vụ">
-<button onclick="addCustomer()">Lưu khách</button>
+<input type="date" id="birthday">
+<input id="service" placeholder="Dịch vụ sử dụng">
+<input type="number" id="price" placeholder="Giá dịch vụ (VNĐ)">
+<input id="consultant" placeholder="Nhân viên tư vấn">
+<input id="staff" placeholder="Nhân viên chăm sóc">
+
+<select id="status">
+<option value="doing">Đang trong tiến trình</option>
+<option value="done">Đã hoàn thành</option>
+</select>
+
+<textarea id="roadmap" placeholder="Lộ trình chăm sóc (mỗi dòng là 1 buổi)"></textarea>
+
+<button onclick="saveCustomer()">Lưu khách hàng</button>
 </div>
 
-<!-- LIST -->
 <div class="card">
 <h3>Danh sách khách hàng</h3>
 <table>
@@ -39,15 +52,16 @@ th{background:#fde4ec}
 <th>Tên</th>
 <th>SĐT</th>
 <th>Dịch vụ</th>
-<th>Lộ trình</th>
+<th>Giá</th>
+<th>Trạng thái</th>
 <th>Chi tiết</th>
+<th>Sửa</th>
 </tr>
 </thead>
 <tbody id="list"></tbody>
 </table>
 </div>
 
-<!-- DETAIL -->
 <div class="card" id="detailBox" style="display:none">
 <h3>Chi tiết khách hàng</h3>
 <div id="detail"></div>
@@ -56,67 +70,88 @@ th{background:#fde4ec}
 
 <script>
 let customers = JSON.parse(localStorage.getItem("spaCRM")) || [];
+let editingId = null;
 
-function autoRoadmap(service){
-  return [
-    "Buổi 1: Tư vấn & soi da",
-    "Buổi 2: Chăm sóc chuyên sâu",
-    "Buổi 3: Phục hồi & duy trì"
-  ];
-}
+function saveCustomer(){
+  const data = {
+    id: editingId || Date.now(),
+    name: name.value,
+    phone: phone.value,
+    birthday: birthday.value,
+    service: service.value,
+    price: price.value,
+    consultant: consultant.value,
+    staff: staff.value,
+    status: status.value,
+    roadmap: roadmap.value.split("\n")
+  };
 
-function addCustomer(){
-  const name = document.getElementById("name").value;
-  const phone = document.getElementById("phone").value;
-  const service = document.getElementById("service").value;
-
-  if(!name || !phone || !service){
-    alert("Vui lòng nhập đầy đủ thông tin");
+  if(!data.name || !data.phone){
+    alert("Nhập tối thiểu tên và SĐT");
     return;
   }
 
-  customers.push({
-    id: Date.now(),
-    name,
-    phone,
-    service,
-    roadmap: autoRoadmap(service)
-  });
+  if(editingId){
+    customers = customers.map(c=>c.id===editingId?data:c);
+    editingId = null;
+  } else {
+    customers.push(data);
+  }
 
   localStorage.setItem("spaCRM", JSON.stringify(customers));
-  document.getElementById("name").value="";
-  document.getElementById("phone").value="";
-  document.getElementById("service").value="";
+  clearForm();
   render();
 }
 
 function render(){
-  const list = document.getElementById("list");
   list.innerHTML="";
   customers.forEach(c=>{
     list.innerHTML+=`
-      <tr>
-        <td>${c.name}</td>
-        <td>${c.phone}</td>
-        <td>${c.service}</td>
-        <td>${c.roadmap.length} buổi</td>
-        <td><button onclick="viewDetail(${c.id})">Xem</button></td>
-      </tr>`;
+    <tr>
+      <td>${c.name}</td>
+      <td>${c.phone}</td>
+      <td>${c.service}</td>
+      <td>${Number(c.price).toLocaleString()}đ</td>
+      <td><span class="badge ${c.status}">${c.status==="doing"?"Đang làm":"Hoàn thành"}</span></td>
+      <td><button onclick="viewDetail(${c.id})">Xem</button></td>
+      <td><button onclick="editCustomer(${c.id})">Sửa</button></td>
+    </tr>`;
   });
 }
 
 function viewDetail(id){
   const c = customers.find(x=>x.id===id);
-  let html = `
-    <div class="detail">
-      <p><b>Tên:</b> ${c.name}</p>
-      <p><b>SĐT:</b> ${c.phone}</p>
-      <p><b>Dịch vụ:</b> ${c.service}</p>
-      <b>Lộ trình chăm sóc:</b>
-      <ul>${c.roadmap.map(r=>`<li>${r}</li>`).join("")}</ul>
-    </div>`;
-  document.getElementById("detail").innerHTML = html;
-  document.getElementById("detailBox").style.display="block";
+  detail.innerHTML=`
+  <p><b>Tên:</b> ${c.name}</p>
+  <p><b>SĐT:</b> ${c.phone}</p>
+  <p><b>Sinh nhật:</b> ${c.birthday||"—"}</p>
+  <p><b>Dịch vụ:</b> ${c.service}</p>
+  <p><b>Giá:</b> ${Number(c.price).toLocaleString()}đ</p>
+  <p><b>NV tư vấn:</b> ${c.consultant}</p>
+  <p><b>NV chăm sóc:</b> ${c.staff}</p>
+  <p><b>Lộ trình:</b></p>
+  <ul>${c.roadmap.map(r=>`<li>${r}</li>`).join("")}</ul>`;
+  detailBox.style.display="block";
+}
+
+function editCustomer(id){
+  const c = customers.find(x=>x.id===id);
+  editingId=id;
+  name.value=c.name;
+  phone.value=c.phone;
+  birthday.value=c.birthday;
+  service.value=c.service;
+  price.value=c.price;
+  consultant.value=c.consultant;
+  staff.value=c.staff;
+  status.value=c.status;
+  roadmap.value=c.roadmap.join("\n");
+  window.scrollTo(0,0);
+}
+
+function clearForm(){
+  name.value=phone.value=birthday.value=service.value=price.value=consultant.value=staff.value=roadmap.value="";
+  status.value="doing";
 }
 
 render();
