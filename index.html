@@ -2,9 +2,7 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<title>CRM - Full</title>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<title>CRM - Multi Services</title>
 
 <style>
 :root{
@@ -13,225 +11,320 @@
   --pink-bg:#fff5f7;
   --pink-border:#f3c6d3;
 }
-body{margin:0;font-family:Arial;background:var(--pink-bg)}
+
+body{
+  margin:0;
+  font-family:Arial;
+  background:var(--pink-bg);
+}
+
 header{
   background:var(--pink-main);
   color:#fff;
-  padding:14px;
-  font-size:18px;
+  padding:16px;
+  font-size:20px;
   font-weight:600;
-  display:flex;
-  justify-content:space-between;
 }
-nav span{
-  margin-left:12px;
-  cursor:pointer;
-  font-size:14px;
-}
-nav span:hover{text-decoration:underline}
-.container{padding:16px}
-.hidden{display:none}
 
-/* ===== DASHBOARD + CRM CSS (GIỮ NGUYÊN) ===== */
-.dashboard{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
-.box{background:#fff;padding:14px;border-radius:8px;border:1px solid var(--pink-border)}
+.container{padding:16px}
+
+.dashboard{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:12px;
+  margin-bottom:16px;
+}
+
+.box{
+  background:#fff;
+  padding:14px;
+  border-radius:8px;
+  border:1px solid var(--pink-border);
+}
+
 .box h3{margin:0;font-size:13px;color:#777}
 .box p{margin-top:6px;font-size:22px;font-weight:bold;color:var(--pink-main)}
-.layout{display:grid;grid-template-columns:340px 1fr;gap:16px}
-.left,.right{background:#fff;border-radius:8px;padding:14px;border:1px solid var(--pink-border)}
-input,select,textarea,button{
-  width:100%;padding:9px;margin:6px 0;font-size:14px;
-  border-radius:6px;border:1px solid var(--pink-border)
+
+.layout{
+  display:grid;
+  grid-template-columns:340px 1fr;
+  gap:16px;
 }
-button{background:var(--pink-main);color:#fff;font-weight:600;border:none;cursor:pointer}
-.customer{padding:10px;border-bottom:1px solid var(--pink-border);cursor:pointer}
+
+.left,.right{
+  background:#fff;
+  border-radius:8px;
+  padding:14px;
+  border:1px solid var(--pink-border);
+}
+
+input,select,textarea,button{
+  width:100%;
+  padding:9px;
+  margin:6px 0;
+  font-size:14px;
+  border-radius:6px;
+  border:1px solid var(--pink-border);
+}
+
+button{
+  background:var(--pink-main);
+  color:#fff;
+  font-weight:600;
+  border:none;
+  cursor:pointer;
+}
+
+.customer{
+  padding:10px;
+  border-bottom:1px solid var(--pink-border);
+  cursor:pointer;
+}
+
 .customer:hover{background:var(--pink-light)}
 .active{background:var(--pink-light);font-weight:600}
-.service{border:1px solid var(--pink-border);padding:8px;border-radius:6px;margin:6px 0}
-.delete{background:#c44a6a;margin-top:10px}
+
+.service{
+  border:1px solid var(--pink-border);
+  padding:8px;
+  border-radius:6px;
+  margin:6px 0;
+}
+
+.delete{
+  background:#c44a6a;
+  margin-top:10px;
+}
+
 label{font-size:13px;color:#777}
 hr{border:none;border-top:1px solid var(--pink-border);margin:12px 0}
-canvas{max-width:600px;margin:auto}
 </style>
 </head>
 
 <body>
 
-<header>
-  CUSTOMER MANAGEMENT
-  <nav>
-    <span onclick="showPage('crm')">CRM</span>
-    <span onclick="showPage('report')">📊 Báo cáo</span>
-  </nav>
-</header>
+<header>CUSTOMER MANAGEMENT</header>
 
-<!-- ================= CRM PAGE ================= -->
-<div class="container" id="crmPage">
+<div class="container">
 
-<div class="dashboard">
-  <div class="box"><h3>Tổng khách</h3><p id="totalCus">0</p></div>
-  <div class="box"><h3>Đang làm</h3><p id="doingCus">0</p></div>
-  <div class="box"><h3>Đã xong</h3><p id="doneCus">0</p></div>
-  <div class="box"><h3>Tổng doanh thu</h3><p id="totalMoney">0</p></div>
-</div>
+  <!-- DASHBOARD -->
+  <div class="dashboard">
+    <div class="box"><h3>Tổng khách</h3><p id="totalCus">0</p></div>
+    <div class="box"><h3>Đang làm</h3><p id="doingCus">0</p></div>
+    <div class="box"><h3>Đã xong</h3><p id="doneCus">0</p></div>
+    <div class="box"><h3>Tổng doanh thu</h3><p id="totalMoney">0</p></div>
+  </div>
 
-<div class="layout">
-<div class="left">
-<b>Thêm khách mới</b>
-<input id="customerName" placeholder="Tên khách">
-<input id="phone" placeholder="Số điện thoại">
-<input id="birthday" type="date">
-<select id="status">
-  <option>Đang làm</option>
-  <option>Đã xong</option>
-</select>
-<input id="staffCare" placeholder="Nhân viên chăm sóc">
-<input id="staffSale" placeholder="Nhân viên tư vấn">
-<textarea id="route" placeholder="Lộ trình chăm sóc"></textarea>
-<button onclick="addCustomer()">Lưu khách</button>
+  <div class="layout">
 
-<hr>
-<b>Tìm kiếm</b>
-<input id="searchInput" placeholder="Tên hoặc SĐT..." oninput="renderList()">
+    <!-- LEFT -->
+    <div class="left">
+      <b>Thêm khách mới</b>
+      <input id="customerName" placeholder="Tên khách">
+      <input id="birthday" type="date">
+      <select id="status">
+        <option>Đang làm</option>
+        <option>Đã xong</option>
+      </select>
+      <input id="staffCare" placeholder="Nhân viên chăm sóc">
+      <input id="staffSale" placeholder="Nhân viên tư vấn">
+      <textarea id="route" placeholder="Lộ trình chăm sóc"></textarea>
+      <button onclick="addCustomer()">Lưu khách</button>
 
-<hr>
-<b>Danh sách khách</b>
-<div id="list"></div>
-</div>
+      <hr>
+      <b>Tìm kiếm khách</b>
+      <input id="searchInput" placeholder="Nhập tên khách..." oninput="renderList()">
 
-<div class="right" id="detail">
-<p>Chọn khách để xem chi tiết</p>
-</div>
-</div>
-</div>
+      <hr>
+      <b>Danh sách khách</b>
+      <div id="list"></div>
+    </div>
 
-<!-- ================= REPORT PAGE ================= -->
-<div class="container hidden" id="reportPage">
-<h2>📊 Doanh thu theo nhân viên tư vấn</h2>
-<canvas id="chart"></canvas>
+    <!-- RIGHT -->
+    <div class="right" id="detail">
+      <p>Chọn khách để xem chi tiết</p>
+    </div>
+
+  </div>
 </div>
 
 <script>
-let customers=[],currentId=null,chart=null;
-
-/* ---------- PAGE ---------- */
-function showPage(p){
-  crmPage.classList.toggle("hidden",p!=="crm");
-  reportPage.classList.toggle("hidden",p!=="report");
-  if(p==="report") renderChart();
-}
+let customers = [];
+let currentId = null;
 
 /* ---------- STORAGE ---------- */
 function save(){
-  localStorage.setItem("customers",JSON.stringify(customers));
+  localStorage.setItem("customers", JSON.stringify(customers));
   renderDashboard();
 }
 
-/* ---------- LOAD ---------- */
 function load(){
-  customers=JSON.parse(localStorage.getItem("customers")||"[]");
-  renderDashboard();renderList();
+  customers = JSON.parse(localStorage.getItem("customers") || "[]");
+  renderDashboard();
+  renderList();
 }
 
 /* ---------- DASHBOARD ---------- */
 function renderDashboard(){
-  totalCus.innerText=customers.length;
-  doingCus.innerText=customers.filter(c=>c.status==="Đang làm").length;
-  doneCus.innerText=customers.filter(c=>c.status==="Đã xong").length;
-  const total=customers.reduce((s,c)=>s+c.services.reduce((x,sv)=>x+sv.price,0),0);
-  totalMoney.innerText=total.toLocaleString();
+  totalCus.innerText = customers.length;
+  doingCus.innerText = customers.filter(c => c.status==="Đang làm").length;
+  doneCus.innerText = customers.filter(c => c.status==="Đã xong").length;
+
+  const total = customers.reduce((sum,c)=>{
+    return sum + c.services.reduce((s,sv)=>s+sv.price,0);
+  },0);
+
+  totalMoney.innerText = total.toLocaleString();
 }
 
 /* ---------- CUSTOMER ---------- */
 function addCustomer(){
-  if(!customerName.value.trim()) return alert("Thiếu tên");
-  customers.push({
-    id:Date.now(),
-    name:customerName.value,
-    phone:phone.value,
-    birthday:birthday.value,
-    status:status.value,
-    staffCare:staffCare.value,
-    staffSale:staffSale.value,
-    route:route.value,
-    services:[]
-  });
-  customerName.value=phone.value=birthday.value=staffCare.value=staffSale.value=route.value="";
-  save();renderList();
+  if(!customerName.value.trim()) return alert("Chưa nhập tên khách");
+
+  const c = {
+    id: Date.now(),
+    name: customerName.value,
+    birthday: birthday.value,
+    status: status.value,
+    staffCare: staffCare.value,
+    staffSale: staffSale.value,
+    route: route.value,
+    services: []
+  };
+
+  customers.push(c);
+  currentId = c.id;
+
+  customerName.value = birthday.value =
+  staffCare.value = staffSale.value = route.value = "";
+
+  save();
+  renderList();
+  openDetail(c.id);
 }
 
 function renderList(){
-  const key=searchInput.value.toLowerCase();
-  list.innerHTML="";
-  customers.filter(c=>
-    c.name.toLowerCase().includes(key)||c.phone.includes(key)
-  ).forEach(c=>{
-    const d=document.createElement("div");
-    d.className="customer"+(c.id===currentId?" active":"");
-    d.innerHTML=`<b>${c.name}</b><br>${c.phone}`;
-    d.onclick=()=>openDetail(c.id);
-    list.appendChild(d);
-  });
+  const key = searchInput.value.toLowerCase();
+  list.innerHTML = "";
+
+  customers
+    .filter(c => c.name.toLowerCase().includes(key))
+    .forEach(c=>{
+      const d = document.createElement("div");
+      d.className = "customer" + (c.id===currentId?" active":"");
+      d.innerHTML = `<b>${c.name}</b><br>${c.status}`;
+      d.onclick = ()=>openDetail(c.id);
+      list.appendChild(d);
+    });
 }
 
-function update(key,val){
-  customers.find(c=>c.id===currentId)[key]=val;
-  save();renderList();
+function update(key,value){
+  const c = customers.find(x=>x.id===currentId);
+  if(!c) return;
+  c[key] = value;
+  save();
+  renderList();
 }
 
-/* ---------- SERVICE ---------- */
+/* ---------- SERVICES ---------- */
 function addService(){
-  const c=customers.find(c=>c.id===currentId);
-  if(!serviceName.value||!servicePrice.value) return;
+  const c = customers.find(x=>x.id===currentId);
+  if(!c) return;
+
+  const name = document.getElementById("serviceName").value.trim();
+  const price = Number(document.getElementById("servicePrice").value);
+
+  if(!name || !price) return alert("Nhập đủ thông tin dịch vụ");
+
   c.services.push({
-    id:Date.now(),
-    name:serviceName.value,
-    price:Number(servicePrice.value),
+    id: Date.now(),
+    name,
+    price,
     status:"Đang làm"
   });
-  serviceName.value=servicePrice.value="";
-  save();openDetail(currentId);
+
+  document.getElementById("serviceName").value="";
+  document.getElementById("servicePrice").value="";
+
+  save();
+  openDetail(currentId);
 }
 
+function updateService(id,key,value){
+  const c = customers.find(x=>x.id===currentId);
+  const s = c.services.find(s=>s.id===id);
+  s[key] = key==="price"?Number(value):value;
+  save();
+}
+
+function removeService(id){
+  const c = customers.find(x=>x.id===currentId);
+  c.services = c.services.filter(s=>s.id!==id);
+  save();
+  openDetail(currentId);
+}
+
+/* ---------- DETAIL ---------- */
 function openDetail(id){
-  currentId=id;renderList();
-  const c=customers.find(c=>c.id===id);
-  const services=c.services.map(s=>`
+  currentId = id;
+  renderList();
+  const c = customers.find(x=>x.id===id);
+  if(!c) return;
+
+  const servicesHTML = c.services.map(s=>`
     <div class="service">
       <b>${s.name}</b> - ${s.price.toLocaleString()}đ
-    </div>`).join("");
-  detail.innerHTML=`
+      <select onchange="updateService(${s.id},'status',this.value)">
+        <option ${s.status==="Đang làm"?"selected":""}>Đang làm</option>
+        <option ${s.status==="Đã xong"?"selected":""}>Đã xong</option>
+      </select>
+      <button class="delete" onclick="removeService(${s.id})">Xoá dịch vụ</button>
+    </div>
+  `).join("");
+
+  detail.innerHTML = `
     <h3>${c.name}</h3>
-    <label>SĐT</label>
-    <input value="${c.phone}" onchange="update('phone',this.value)">
+
+    <label>Trạng thái khách</label>
+    <select onchange="update('status',this.value)">
+      <option ${c.status==="Đang làm"?"selected":""}>Đang làm</option>
+      <option ${c.status==="Đã xong"?"selected":""}>Đã xong</option>
+    </select>
+
+    <label>Nhân viên chăm sóc</label>
+    <input value="${c.staffCare}" onchange="update('staffCare',this.value)">
+
     <label>Nhân viên tư vấn</label>
     <input value="${c.staffSale}" onchange="update('staffSale',this.value)">
+
+    <label>Lộ trình</label>
+    <textarea onchange="update('route',this.value)">${c.route}</textarea>
+
     <hr>
+    <b>Thêm dịch vụ</b>
     <input id="serviceName" placeholder="Tên dịch vụ">
     <input id="servicePrice" type="number" placeholder="Giá">
     <button onclick="addService()">Thêm dịch vụ</button>
-    <hr>${services||"<i>Chưa có dịch vụ</i>"}
+
+    <hr>
+    <b>Danh sách dịch vụ</b>
+    ${servicesHTML || "<i>Chưa có dịch vụ</i>"}
+
+    <button class="delete" onclick="removeCustomer()">Xoá khách</button>
   `;
 }
 
-/* ---------- CHART ---------- */
-function renderChart(){
-  const map={};
-  customers.forEach(c=>{
-    const k=c.staffSale||"Chưa gán";
-    const t=c.services.reduce((s,x)=>s+x.price,0);
-    map[k]=(map[k]||0)+t;
-  });
-  if(chart) chart.destroy();
-  chart=new Chart(document.getElementById("chart"),{
-    type:"pie",
-    data:{
-      labels:Object.keys(map),
-      datasets:[{data:Object.values(map)}]
-    }
-  });
+function removeCustomer(){
+  if(confirm("Xoá khách này?")){
+    customers = customers.filter(c=>c.id!==currentId);
+    currentId=null;
+    save();
+    renderList();
+    detail.innerHTML="<p>Chọn khách để xem chi tiết</p>";
+  }
 }
 
+/* ---------- INIT ---------- */
 load();
 </script>
 
